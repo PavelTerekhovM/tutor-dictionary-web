@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Урок{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+    <div class="card my-3 w-75">
+        <div class="card-header py-3">
+<!--translation_reverse is flag to chose direction of translation e.g russian-english or english-russian. Next-card appears when answer send, therefore right answer apears after that-->
+            {% if not translation_reverse %}
+            <h4>{{ card.word.body }}{% if next_card %} - {{ card.word.translations }}{% endif %} </h4>
+            {% else %}
+            <h4>{{ card.word.translations }}{% if next_card %} - {{ card.word.body }}{% endif %} </h4>
+            {% endif %}
+<!--end of block -->
+        </div>
+        <div class="card-body pb-1">
+            <form action="{% url 'lesson:learn' card_pk=card.pk user_pk=user.pk dictionary_pk=dictionary.pk translation_reverse=translation_reverse %}" method="post">
+                {{ form }}
+                {% csrf_token %}
+                <h6 class="border-top pt-2">Пример: {{ card.word.example }}</h6>
+<!--Next-card appears when answer send, therefore button bellow visible until sending answer-->
+                {% if not next_card %}
+                <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted" type="submit">Проверить</button>
+                <button class="py-1 ms-3 btn btn-outline-dark rounded-0" type="submit"><a href="{% url 'lesson:lesson'  user_pk=user.pk dictionary_pk=dictionary.pk %}" class="text-decoration-none text-muted">Завершить</a></button>
+                {% endif %}
+<!--end block-->
+            </form>
+<!--Next-card appears when answer send, therefore button bellow after sending answer-->
+            {% if next_card %}
+            <button class="py-1 my-1 btn btn-outline-dark rounded-0" type="submit"><a href="{% url 'lesson:learn' card_pk=next_card.pk user_pk=user.pk dictionary_pk=dictionary.pk translation_reverse=translation_reverse %}" class="text-decoration-none text-muted">Следующая карточка</a></button>
+
+            <button class="py-1 ms-3 btn btn-outline-dark rounded-0" type="submit"><a href="{% url 'lesson:lesson'  user_pk=user.pk dictionary_pk=dictionary.pk %}" class="text-decoration-none text-muted">Завершить</a></button>
+            {% endif %}
+<!--end block-->
+        </div>
+    </div>
+</div>
+
+{% endblock %}

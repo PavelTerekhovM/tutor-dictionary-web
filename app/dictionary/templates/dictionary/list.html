@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Cловари{% endblock %}
+
+{% block content %}
+    <div class="infinite-container">
+    {% for dictionary in dictionaries %}
+    {% if request.user not in dictionary.student.all %}
+    <div class="card my-3 infinite-item"><a href="{{ dictionary.get_absolute_url }}" class="text-decoration-none text-reset">
+        <div class="card-header py-3">
+            <h5 class="text">{{ dictionary.title }}</h5>
+            <p class="mb-1">Создан: {{ dictionary.created }}</p>
+            <span class="badge bg-secondary mt-1">{% if dictionary.status == "private" %}Private{% else %}Public{% endif %}</span>
+            <span class="badge bg-secondary">Создан {{ dictionary.author }}</span>
+            <span class="badge bg-secondary"> {{ dictionary.word.count }} слов</span>
+            <span class="badge bg-secondary"> {{ dictionary.note|truncatewords:5 }}</span>
+        </div>
+        <div class="card-body">
+            {% for word in dictionary.word.all|slice:":7" %}
+            <p>{{ word.body }} - {{ word.translations }}</p>
+            {% endfor %}
+            <p>...</p>
+            {% if dictionary.word.all.count > 7 %}
+            {% for word in dictionary.word.all|slice:"8:" %}
+            {{ word.body }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+            {% endif %}
+        </div>
+    </a>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!--infinite scroll-->
+{% if page_obj.has_next %}
+    <a class="infinite-more-link" href="?page={{ page_obj.next_page_number }}"></a>
+{% endif %}
+<span class="spinner-border loading" role="status" style="display: none;"></span>
+<!--end infinite scroll-->
+{% endblock %}
+
+

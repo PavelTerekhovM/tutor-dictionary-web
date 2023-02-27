@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Вход в Lingvo tutor{% endblock %}
+
+{% block content %}
+<h3>Вход в Lingvo tutor</h3>
+{% if form.errors %}
+    <p>Имя или пароль указанны неверно, пожалуйста, повторите вход</p>
+{% else %}
+    <p>Для входа укажите свое имя и пароль</p>
+{% endif %}
+<div class="login-form">
+    <form action="{% url 'login' %}" method="post">
+        {{ form.as_p }}
+        {% csrf_token %}
+        <div class="d-grid gap-2 d-md-block pb-4">
+            <button type="submit" class="btn btn-outline-secondary">Вход</button>
+            <button type="button" class="btn btn-outline-secondary"><a href="{% url 'password_reset' %}" class="text-decoration-none text-muted">Восстановление пароля</a></button>
+        </div>
+    </form>
+</div>
+{% endblock %}

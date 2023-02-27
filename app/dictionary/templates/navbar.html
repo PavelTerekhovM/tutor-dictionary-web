@@ -1,0 +1,48 @@
+<nav class="navbar navbar-expand-lg bg-light">
+    <div class="container">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                {% if request.user.is_authenticated %}
+                <li class="nav-item">
+                    <a href="{% url 'my_dictionaries' %}" class="nav-link px-2 text-muted">Мои словари</a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a href="{% url 'list_of_dictionaries' %}" class="nav-link px-2 text-muted">Словари</a>
+                </li>
+
+                {% if request.user.is_authenticated %}
+                <li class="nav-item">
+                    <a href="{% url 'upload_file' %}" class="nav-link px-2 text-muted">Добавить словарь</a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a href="{% url 'dictionary_search' %}" class="nav-link px-2 text-muted">Поиск</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'about' %}" class="nav-link px-2 text-muted">О проекте</a>
+                </li>
+            </ul>
+        </div>
+
+      <div class="text-end">
+        {% if request.user.is_authenticated %}
+        <ul class="navbar-nav">
+          <li class="text-decoration-none text-body me-1 d-flex align-items-center nav-link text-muted">Здравствуй, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user }}{% endif %}</li>
+          <li class="nav-item">
+            <button type="button" class="btn btn-outline-secondary me-2"><a href="{% url 'password_change' %}" class="text-decoration-none text-muted">Изменить пароль</a></button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="btn btn-outline-secondary"><a href="{% url 'logout' %}" class="text-decoration-none text-muted">Выйти</a></button>
+          </li>
+        {% else %}
+          <button type="button" class="btn btn-outline-secondary"><a href="{% url 'login' %}" class="text-decoration-none text-muted">Войти</a></button>
+          <button type="button" class="btn btn-outline-secondary ms-1"><a href="{% url 'register' %}" class="text-decoration-none text-muted">Регистрация</a></button>
+        {% endif %}
+      </div>
+    </div>
+</nav>
