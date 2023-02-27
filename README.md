@@ -1,2 +1,2 @@
-# LT_web
+# tutor-dictionary-web
 web interface for LT dictionaries
