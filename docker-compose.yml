@@ -21,12 +21,20 @@ services:
       - DB_PASS=123
       - ALLOWED_HOSTS=0.0.0.0
     depends_on:
+      db:
+        condition: service_healthy
+    links:
       - db
 
   db:
     image: postgres:13-alpine
     volumes:
       - dev-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     environment:
       - POSTGRES_DB=tutor_dictionary
       - POSTGRES_USER=postgres
