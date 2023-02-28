@@ -189,9 +189,8 @@ def lesson(request, dictionary_pk, **kwargs):
         select_related('word').\
         select_related('lesson')
 
-    # form_answers - required to change the
-    # setting of lesson, initial= need to
-    # show value in template
+    # form_answers - required to change the setting of lesson,
+    # initial need to show value in template
     form_answers = ChangeNumberAnswers(
         initial={'required_answers': lesson.required_answers}
     )
@@ -203,7 +202,8 @@ def lesson(request, dictionary_pk, **kwargs):
     # form_card - required to change the setting of card
     form_card = ChangeCardStatus()
     context = dict(dictionary=dictionary,
-                   lesson=lesson, cards=cards,
+                   lesson=lesson,
+                   cards=cards,
                    form_answers=form_answers,
                    form_card=form_card)
     return render(request, 'lesson.html', context=context)
