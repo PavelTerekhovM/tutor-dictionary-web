@@ -133,3 +133,4 @@ dmypy.json
 /.mypy_cache/
 /.mypy_cache/.gitignore
 /.mypy_cache/CACHEDIR.TAG
+/app/media/

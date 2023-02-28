@@ -28,6 +28,12 @@ SECRET_KEY = 'django-insecure-*0i8$k$m-8qe*rj+p%j1&$10y3p)dqpse9kcl#^sbzb#)@knz-
 DEBUG = True
 
 ALLOWED_HOSTS = []
+ALLOWED_HOSTS.extend(
+    filter(
+        None,
+        os.environ.get('ALLOWED_HOSTS', '').split(','),
+    )
+)
 
 
 # Application definition
@@ -83,9 +89,10 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tutor_dictionary',
-        'USER': 'postgres',
-        'PASSWORD': '123',
+        'HOST': os.environ.get('DB_HOST'),
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASS'),
     }
 }
 
@@ -134,14 +141,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 LOGIN_REDIRECT_URL = "list_of_dictionaries"
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
-
-
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 465
-EMAIL_HOST_USER = "t89213064699@gmail.com"
-EMAIL_HOST_PASSWORD = 'tdxhenuivxdjcyym'
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
 
 
 MESSAGE_TAGS = {
