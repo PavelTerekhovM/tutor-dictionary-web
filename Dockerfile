@@ -21,7 +21,7 @@ RUN python -m venv /py && \
        --disabled-password \
        --no-create-home \
        django-user && \
-    chown -R django-user:django-user /vol && \
+    chown -R django-user:django-user /app/tests && \
     chmod -R 777 /vol
 
 ENV PATH="/py/bin:$PATH"
