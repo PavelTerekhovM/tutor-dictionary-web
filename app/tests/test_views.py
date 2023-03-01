@@ -10,7 +10,7 @@ from django.test import Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 
-from dictionary.models import Dictionary
+# from dictionary.models import Dictionary
 
 
 class Settings(TestCase):
@@ -100,7 +100,10 @@ class TestDictionary(Settings):
     #     self.assertEqual('/my_dictionaries', res.url)
     #     self.assertEqual(1, len(Dictionary.objects.all()))
     #     self.assertEqual('test file', Dictionary.objects.get(pk=1).note)
-    #     self.assertEqual('Test 2022.07.13', Dictionary.objects.get(pk=1).title)
+    #     self.assertEqual(
+    #       'Test 2022.07.13',
+    #       Dictionary.objects.get(pk=1).title
+    #     )
 
 
 # class TestLesson(Settings):
