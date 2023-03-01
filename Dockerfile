@@ -22,7 +22,7 @@ RUN python -m venv /py && \
        --no-create-home \
        django-user && \
     chown -R django-user:django-user /app/tests && \
-    chmod -R 777 /vol
+    chmod -R 777 /app/tests
 
 ENV PATH="/py/bin:$PATH"
 
