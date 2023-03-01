@@ -1,6 +1,5 @@
 import os
 import shutil
-import tempfile
 
 # import ipdb
 from django.conf import settings
@@ -21,17 +20,15 @@ class Settings(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        settings.MEDIA_ROOT = tempfile.mkdtemp(
-            prefix='tmp_dir_',
-            dir=os.path.join(settings.BASE_DIR, 'tests/')
+        settings.MEDIA_ROOT = os.path.join(
+            settings.BASE_DIR,
+            'tests/tmp_media'
         )
-        print('setUpClass - settings.MEDIA_ROOT', settings.MEDIA_ROOT)
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        print('tearDownClass settings.MEDIA_ROOT', settings.MEDIA_ROOT)
-        shutil.rmtree(settings.MEDIA_ROOT)
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
 class TestDictionary(Settings):
@@ -91,7 +88,7 @@ class TestDictionary(Settings):
         # provided file saved in db
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/Test_2022.07.13En-Ru.xml'
+            'tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -103,7 +100,10 @@ class TestDictionary(Settings):
         self.assertEqual('/my_dictionaries', res.url)
         self.assertEqual(1, len(Dictionary.objects.all()))
         self.assertEqual('test file', Dictionary.objects.get(pk=1).note)
-        self.assertEqual('Test 2022.07.13', Dictionary.objects.get(pk=1).title)
+        self.assertEqual(
+            'Test 2022.07.13',
+            Dictionary.objects.get(pk=1).title,
+        )
 
 
 class TestLesson(Settings):
@@ -126,7 +126,7 @@ class TestLesson(Settings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/Test_2022.07.13En-Ru.xml'
+            'tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -138,7 +138,10 @@ class TestLesson(Settings):
     def test_lesson(self):
         url = reverse(
             'lesson:lesson',
-            kwargs={'user_pk': self.user.pk, 'dictionary_pk': 2}
+            kwargs={
+                'user_pk': self.user.pk,
+                'dictionary_pk': Dictionary.objects.latest('created').pk
+            }
         )
         res = self.client_auth.get(url)
         self.assertEqual(200, res.status_code)
