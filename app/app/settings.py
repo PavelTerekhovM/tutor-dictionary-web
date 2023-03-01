@@ -28,6 +28,7 @@ SECRET_KEY = 'django-insecure-*0i8$k$m-8qe*rj+p%j1&$10y3p)dqpse9kcl#^sbzb#)@knz-
 DEBUG = bool(int(os.environ.get('DEBUG', 0)))
 
 ALLOWED_HOSTS = []
+
 ALLOWED_HOSTS.extend(
     filter(
         None,
