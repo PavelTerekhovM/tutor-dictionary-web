@@ -1,8 +1,15 @@
+from xml.etree.ElementTree import ParseError
+import xml.etree.ElementTree as ET
+
 from django import forms
 from django.contrib.auth.forms import (
     UserCreationForm,
     PasswordChangeForm
 )
+from django.core.exceptions import ValidationError
+
+from django.core.validators import FileExtensionValidator
+
 from .models import Dictionary
 from django.contrib.auth.models import User
 
@@ -46,6 +53,39 @@ class DictionaryForm(forms.ModelForm):
     """
     form for uploading a new xml-dictionary
     """
+    file = forms.FileField(
+        validators=[FileExtensionValidator(
+            allowed_extensions=['xml', 'csv', ],
+        )],
+        error_messages={
+            'invalid_extension': 'Допустимые расширения словарей "xml" и "csv"'
+        },
+    )
+
+    def clean_file(self):
+        """
+        method to avoid files which can't be parsed afterwards
+        due to unknown structure
+        """
+        uploaded_file = self.cleaned_data.get('file')
+        if uploaded_file:
+            try:
+                file = b''
+                for line in uploaded_file:
+                    file += line
+                tree = ET.ElementTree(ET.fromstring(file))
+                root = tree.getroot()
+                cards = []
+                for card in root.iter('card'):
+                    cards += card
+                if not (root.attrib['title'] and cards):
+                    raise ValidationError("Загруженный файл не был распознан")
+                else:
+                    return uploaded_file
+            except ParseError:
+                raise ValidationError("Загруженный файл не был распознан")
+        raise ValidationError("Загруженный файл не был распознан")
+
     class Meta:
         model = Dictionary
         fields = ['note', 'status', 'file']

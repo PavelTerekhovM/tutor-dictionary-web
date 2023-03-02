@@ -1,7 +1,6 @@
 import os
 import shutil
 
-# import ipdb
 from django.conf import settings
 
 from django.test import TestCase
@@ -13,7 +12,7 @@ from django.urls import reverse
 from dictionary.models import Dictionary
 
 
-class Settings(TestCase):
+class BaseTestSettings(TestCase):
     """
     Base settings for all view tests
     """
@@ -31,7 +30,7 @@ class Settings(TestCase):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
-class TestDictionary(Settings):
+class TestDictionary(BaseTestSettings):
     """
     Testcase for testing views of dictionary-app
     """
@@ -106,7 +105,7 @@ class TestDictionary(Settings):
         )
 
 
-class TestLesson(Settings):
+class TestLesson(BaseTestSettings):
     def setUp(self):
         user_authenticated = {
             'username': 'test_user_2',
@@ -145,4 +144,4 @@ class TestLesson(Settings):
         )
         res = self.client_auth.get(url)
         self.assertEqual(200, res.status_code)
-        # ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
