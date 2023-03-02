@@ -165,60 +165,14 @@ class AddDictionaryView(LoginRequiredMixin, CreateView):
     template_name = "dictionary/upload_file.html"
     success_url = reverse_lazy("my_dictionaries")
 
-    def form_valid(self, form):
+    def get_initial(self):
         """
-        parse uploaded xml-file
-        - take parts of file in for-cycle  and add them
-        in byte-string
-        - find title of dictionary-file, create a new
-        instance of dictionary
-        - parse byte-string and find all cards, take words,
-        translations and examples
-        - create new instance of words for each card
-        - assign all new word instances to the created dictionary
+        Placing request.user to initial dictionary to make it
+        available while saving form
         """
-        form.instance.author = self.request.user
-        uploaded_file = self.request.FILES['file']
-        # can't read uploaded_file, so add all lines to byte-string
-        file = b''
-        for line in uploaded_file:
-            file += line
-
-        # parse file with ElementTree module
-        tree = ET.ElementTree(ET.fromstring(file))
-        root = tree.getroot()
-        title = root.attrib['title']  # find name of file
-        slug = slugify(title)
-        form.instance.author = self.request.user
-        form.instance.title = title
-        form.instance.slug = slug
-        self.object = form.save()
-
-        # internal method recursively find all nodes
-        for card in root.iter('card'):
-            # need to clean variable from value of previous card
-            example = ''
-            for translations in card.iter('translations'):
-                # find translation of word
-                translations = translations.find('word').text
-            for word in card.iter('word'):
-                if word.attrib:
-                    body = word.text        # find text of word
-            for example in card.iter('example'):
-                example = example.text      # find example of word
-
-            slug = slugify(body)
-            # create and save new word in DB
-            new_word = Word.objects.create(
-                body=body,
-                slug=slug,
-                translations=translations,
-                example=example)
-
-            new_word.save()
-            self.object.word.add(new_word)
-        self.object = form.save()
-        return HttpResponseRedirect(self.get_success_url())
+        super().get_initial()
+        self.initial.update({'author': self.request.user})
+        return self.initial
 
 
 def dictionary_search(request):

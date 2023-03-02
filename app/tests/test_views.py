@@ -93,8 +93,14 @@ class TestDictionary(BaseTestSettings):
         with open(sample_file, 'rb') as fp:
             res = self.client_auth.post(
                 url,
-                {'note': 'test file', 'status': 'public', 'file': fp}
+                {
+                    'author': self.user_auth.pk,
+                    'note': 'test file',
+                    'status': 'public',
+                    'file': fp
+                }
             )
+        # import ipdb; ipdb.set_trace()
         self.assertEqual(302, res.status_code)
         self.assertEqual('/my_dictionaries', res.url)
         self.assertEqual(1, len(Dictionary.objects.all()))
@@ -131,7 +137,12 @@ class TestLesson(BaseTestSettings):
         with open(sample_file, 'rb') as fp:
             res = self.client_auth.post(
                 reverse('upload_file'),
-                {'note': 'test file', 'status': 'public', 'file': fp}
+                {
+                    'author': self.user_auth.pk,
+                    'note': 'test file',
+                    'status': 'public',
+                    'file': fp
+                }
             )
 
     def test_lesson(self):
