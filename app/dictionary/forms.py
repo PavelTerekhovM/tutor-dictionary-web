@@ -1,6 +1,3 @@
-from xml.etree.ElementTree import ParseError
-import xml.etree.ElementTree as ET
-
 from django import forms
 from django.contrib.auth.forms import (
     UserCreationForm,
@@ -9,9 +6,9 @@ from django.contrib.auth.forms import (
 from django.core.exceptions import ValidationError
 
 from django.core.validators import FileExtensionValidator
-from django.template.defaultfilters import slugify
 
-from .models import Dictionary, Word
+from .helpers import DictionaryFileManager
+from .models import Dictionary
 from django.contrib.auth.models import User
 
 
@@ -70,87 +67,28 @@ class DictionaryForm(forms.ModelForm):
         self.author = kwargs['initial']['author']
         super().__init__(*args, **kwargs)
 
+    def clean_file(self):
+        """
+        Method to avoid files which can't be parsed afterwards
+        due to unknown structure
+        """
+        uploaded_file = self.cleaned_data.get('file')
+        if DictionaryFileManager(uploaded_file).clean_file():
+            return uploaded_file
+        raise ValidationError("Загруженный файл не был распознан")
+
     def save(self, commit=True):
         """
         Creating dicrtionary instance and words instance
-        while saving form while
-        To do so:
-        parse uploaded file
-        - take parts of file in for-cycle  and add them
-        in byte-string
-        - find title of dictionary-file, create a new
-        instance of dictionary
-        - parse byte-string and find all cards, take words,
-        translations and examples
-        - create new instance of words for each card
-        - assign all new word instances to the created dictionary
+        while saving form while delegated to custom handler
+        DictionaryFileManager
         """
 
         obj = super().save(False)
         obj.author = self.author
         uploaded_file = self.cleaned_data.get('file')
-        # can't read uploaded_file, so add all lines to byte-string
-        file = b''
-        for line in uploaded_file:
-            file += line
-
-        # parse file with ElementTree module
-        tree = ET.ElementTree(ET.fromstring(file))
-        root = tree.getroot()
-        obj.title = root.attrib['title']  # find name of file
-        obj.slug = slugify(obj.title)
-        # otherwise can't add many-to-many objects
-        obj.save()
-
-        # internal method recursively find all nodes
-        for card in root.iter('card'):
-            # need to clean variable from value of previous card
-            example = ''
-            for translations in card.iter('translations'):
-                # find translation of word
-                translations = translations.find('word').text
-            for word in card.iter('word'):
-                if word.attrib:
-                    body = word.text        # find text of word
-                    slug = slugify(body)
-            for example in card.iter('example'):
-                example = example.text      # find example of word
-
-            # create and save new word in DB
-            new_word = Word.objects.create(
-                body=body,
-                slug=slug,
-                translations=translations,
-                example=example)
-            new_word.save()
-            obj.word.add(new_word)
-        obj.save()
+        obj = DictionaryFileManager(uploaded_file).parse_file(obj)
         return obj
-
-    def clean_file(self):
-        """
-        method to avoid files which can't be parsed afterwards
-        due to unknown structure
-        """
-        uploaded_file = self.cleaned_data.get('file')
-        if uploaded_file:
-            try:
-                file = b''
-                for line in uploaded_file:
-                    file += line
-                tree = ET.ElementTree(ET.fromstring(file))
-                root = tree.getroot()
-                cards = []
-                for card in root.iter('card'):
-                    cards += card
-                if not (root.attrib['title'] and cards):
-                    raise ValidationError("Загруженный файл не был распознан")
-                else:
-                    return uploaded_file
-            except ParseError:
-                raise ValidationError("Загруженный файл не был распознан")
-        raise ValidationError("Загруженный файл не был распознан")
-
 
     class Meta:
         model = Dictionary
@@ -164,7 +102,7 @@ class DictionaryForm(forms.ModelForm):
             'author': forms.HiddenInput(),
             'note': forms.Textarea(attrs={"class": "form-control", "rows": 5}),
         }
-        required = ('status', 'file')
+        required = ('file', )
 
 
 class SearchForm(forms.Form):

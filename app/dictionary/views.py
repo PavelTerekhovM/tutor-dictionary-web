@@ -4,11 +4,9 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-from .models import Dictionary, Word
+from .models import Dictionary
 from .forms import DictionaryForm, AddStudentForm, SearchForm
 from django.urls import reverse_lazy
-import xml.etree.ElementTree as ET
-from django.template.defaultfilters import slugify
 from .forms import UserRegistrationForm
 from django.views.generic.edit import CreateView
 from django.views.decorators.http import require_POST, require_GET
@@ -161,6 +159,10 @@ class Dictionary_detail(DetailView):
 
 
 class AddDictionaryView(LoginRequiredMixin, CreateView):
+    """
+    form.save() handling creating all objects required to
+    create new dictionary
+    """
     form_class = DictionaryForm
     template_name = "dictionary/upload_file.html"
     success_url = reverse_lazy("my_dictionaries")
@@ -173,6 +175,20 @@ class AddDictionaryView(LoginRequiredMixin, CreateView):
         super().get_initial()
         self.initial.update({'author': self.request.user})
         return self.initial
+
+    def form_valid(self, form):
+        """
+        in case of exceptions while parsing file we redirect back
+        with error message
+        """
+        self.object = form.save()
+        if not self.object:
+            messages.error(
+                self.request,
+                'Что-то пошло не так, повторите попытку'
+            )
+            return redirect('upload_file')
+        return HttpResponseRedirect(self.get_success_url())
 
 
 def dictionary_search(request):
