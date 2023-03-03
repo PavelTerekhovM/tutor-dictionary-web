@@ -10,7 +10,7 @@ class Dictionary(models.Model):
     )
     title = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100)
-    student = models.ManyToManyField(User, )
+    student = models.ManyToManyField(User)
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=10,

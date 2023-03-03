@@ -1,7 +1,6 @@
 import os
 import shutil
 
-# import ipdb
 from django.conf import settings
 
 from django.test import TestCase
@@ -13,7 +12,7 @@ from django.urls import reverse
 from dictionary.models import Dictionary
 
 
-class Settings(TestCase):
+class BaseTestSettings(TestCase):
     """
     Base settings for all view tests
     """
@@ -31,7 +30,7 @@ class Settings(TestCase):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
-class TestDictionary(Settings):
+class TestDictionary(BaseTestSettings):
     """
     Testcase for testing views of dictionary-app
     """
@@ -94,19 +93,98 @@ class TestDictionary(Settings):
         with open(sample_file, 'rb') as fp:
             res = self.client_auth.post(
                 url,
-                {'note': 'test file', 'status': 'public', 'file': fp}
+                {
+                    'author': self.user_auth.pk,
+                    'note': 'test file',
+                    'status': 'public',
+                    'file': fp
+                }
             )
+
         self.assertEqual(302, res.status_code)
         self.assertEqual('/my_dictionaries', res.url)
         self.assertEqual(1, len(Dictionary.objects.all()))
-        self.assertEqual('test file', Dictionary.objects.get(pk=1).note)
+        self.assertEqual(
+            'test file',
+            Dictionary.objects.latest('created').note
+        )
         self.assertEqual(
             'Test 2022.07.13',
-            Dictionary.objects.get(pk=1).title,
+            Dictionary.objects.latest('created').title,
+        )
+        self.assertEqual(
+            25,
+            Dictionary.objects.latest('created').word.count(),
+        )
+        self.assertEqual(
+            'test-2022-07-13',
+            Dictionary.objects.latest('created').slug,
+        )
+
+    def test_AddDictionaryView_auth_invalid_files(self):
+        """
+        Testing creating dictionary by authenticated user with invalid files
+        """
+        url = reverse(
+            'upload_file'
+        )
+        sample_file = os.path.join(
+            settings.BASE_DIR,
+            'tests/sample_file/dict_file_with_invalid_structure.xml'
+        )
+
+        with open(sample_file, 'rb') as fp:
+            res = self.client_auth.post(
+                url,
+                {
+                    'author': self.user_auth.pk,
+                    'note': 'test file',
+                    'status': 'public',
+                    'file': fp
+                }
+            )
+
+        self.assertEqual(200, res.status_code)
+        self.assertTrue(res.context.get('form').is_bound)
+        self.assertFalse(res.context.get('form').is_valid())
+        self.assertEqual(
+            'Загруженный файл не был распознан',
+            res.context.get('form').errors.get('file')[0]
+        )
+
+    def test_AddDictionaryView_auth_csv_files(self):
+        """
+        Testing creating dictionary by authenticated user with csv files
+        """
+        url = reverse(
+            'upload_file'
+        )
+        sample_file = os.path.join(
+            settings.BASE_DIR,
+            'tests/sample_file/csv_file.csv'
+        )
+
+        with open(sample_file, 'rb') as fp:
+            res = self.client_auth.post(
+                url,
+                {
+                    'author': self.user_auth.pk,
+                    'note': 'test file',
+                    'status': 'public',
+                    'file': fp
+                }
+            )
+
+        self.assertEqual(200, res.status_code)
+        self.assertTrue(res.context.get('form').is_bound)
+        self.assertFalse(res.context.get('form').is_valid())
+        self.assertEqual(
+            'Загруженный файл не был распознан',
+            res.context.get('form').errors.get('file')[0]
         )
 
 
-class TestLesson(Settings):
+class TestLesson(BaseTestSettings):
     def setUp(self):
         user_authenticated = {
             'username': 'test_user_2',
@@ -132,7 +210,12 @@ class TestLesson(Settings):
         with open(sample_file, 'rb') as fp:
             res = self.client_auth.post(
                 reverse('upload_file'),
-                {'note': 'test file', 'status': 'public', 'file': fp}
+                {
+                    'author': self.user_auth.pk,
+                    'note': 'test file',
+                    'status': 'public',
+                    'file': fp
+                }
             )
 
     def test_lesson(self):
@@ -145,4 +228,4 @@ class TestLesson(Settings):
         )
         res = self.client_auth.get(url)
         self.assertEqual(200, res.status_code)
-        # ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()

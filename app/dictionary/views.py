@@ -4,11 +4,9 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-from .models import Dictionary, Word
+from .models import Dictionary
 from .forms import DictionaryForm, AddStudentForm, SearchForm
 from django.urls import reverse_lazy
-import xml.etree.ElementTree as ET
-from django.template.defaultfilters import slugify
 from .forms import UserRegistrationForm
 from django.views.generic.edit import CreateView
 from django.views.decorators.http import require_POST, require_GET
@@ -161,63 +159,35 @@ class Dictionary_detail(DetailView):
 
 
 class AddDictionaryView(LoginRequiredMixin, CreateView):
+    """
+    form.save() handling creating all objects required to
+    create new dictionary
+    """
     form_class = DictionaryForm
     template_name = "dictionary/upload_file.html"
     success_url = reverse_lazy("my_dictionaries")
 
+    def get_initial(self):
+        """
+        Placing request.user to initial dictionary to make it
+        available while saving form
+        """
+        super().get_initial()
+        self.initial.update({'author': self.request.user})
+        return self.initial
+
     def form_valid(self, form):
         """
-        parse uploaded xml-file
-        - take parts of file in for-cycle  and add them
-        in byte-string
-        - find title of dictionary-file, create a new
-        instance of dictionary
-        - parse byte-string and find all cards, take words,
-        translations and examples
-        - create new instance of words for each card
-        - assign all new word instances to the created dictionary
+        in case of exceptions while parsing file we redirect back
+        with error message
         """
-        form.instance.author = self.request.user
-        uploaded_file = self.request.FILES['file']
-        # can't read uploaded_file, so add all lines to byte-string
-        file = b''
-        for line in uploaded_file:
-            file += line
-
-        # parse file with ElementTree module
-        tree = ET.ElementTree(ET.fromstring(file))
-        root = tree.getroot()
-        title = root.attrib['title']  # find name of file
-        slug = slugify(title)
-        form.instance.author = self.request.user
-        form.instance.title = title
-        form.instance.slug = slug
         self.object = form.save()
-
-        # internal method recursively find all nodes
-        for card in root.iter('card'):
-            # need to clean variable from value of previous card
-            example = ''
-            for translations in card.iter('translations'):
-                # find translation of word
-                translations = translations.find('word').text
-            for word in card.iter('word'):
-                if word.attrib:
-                    body = word.text        # find text of word
-            for example in card.iter('example'):
-                example = example.text      # find example of word
-
-            slug = slugify(body)
-            # create and save new word in DB
-            new_word = Word.objects.create(
-                body=body,
-                slug=slug,
-                translations=translations,
-                example=example)
-
-            new_word.save()
-            self.object.word.add(new_word)
-        self.object = form.save()
+        if not self.object:
+            messages.error(
+                self.request,
+                'Что-то пошло не так, повторите попытку'
+            )
+            return redirect('upload_file')
         return HttpResponseRedirect(self.get_success_url())
 
 
