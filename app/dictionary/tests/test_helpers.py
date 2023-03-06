@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 
 from dictionary.helpers import DictionaryFileManager
 from dictionary.models import Dictionary
-from tests.test_views import BaseTestSettings
+from dictionary.tests.test_views import BaseTestSettings
 
 
 class TestDictionary(BaseTestSettings):
@@ -27,7 +27,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/valid_dict_file.xml'
+            'dictionary/tests/sample_file/valid_dict_file.xml'
         )
         with open(sample_file, 'rb') as file:
             instance = DictionaryFileManager(file)
@@ -42,7 +42,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/invalid_extension.jpg'
+            'dictionary/tests/sample_file/invalid_extension.jpg'
         )
         with open(sample_file, 'rb') as file:
             instance = DictionaryFileManager(file)
@@ -56,7 +56,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/invalid_file.xml'
+            'dictionary/tests/sample_file/invalid_file.xml'
         )
         with open(sample_file, 'rb') as file:
             instance = DictionaryFileManager(file)
@@ -71,7 +71,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/valid_dict_file_without_name.xml'
+            'dictionary/tests/sample_file/valid_dict_file_without_name.xml'
         )
 
         obj = Dictionary.objects.create(author=self.user)
@@ -93,7 +93,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/csv_file.csv'
+            'dictionary/tests/sample_file/csv_file.csv'
         )
 
         obj = Dictionary.objects.create(author=self.user)
@@ -110,7 +110,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/valid_dict_file.xml'
+            'dictionary/tests/sample_file/valid_dict_file.xml'
         )
         obj = Dictionary.objects.create(author=self.user)
         with open(sample_file, 'rb') as file:
@@ -130,7 +130,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/valid_dict_file_without_name.xml'
+            'dictionary/tests/sample_file/valid_dict_file_without_name.xml'
         )
         obj = Dictionary.objects.create(author=self.user)
         with open(sample_file, 'rb') as file:

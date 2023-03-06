@@ -21,7 +21,7 @@ class BaseTestSettings(TestCase):
         super().setUpClass()
         settings.MEDIA_ROOT = os.path.join(
             settings.BASE_DIR,
-            'tests/tmp_media'
+            'dictionary/tests/tmp_media'
         )
 
     @classmethod
@@ -87,7 +87,7 @@ class TestDictionary(BaseTestSettings):
         # provided file saved in db
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/valid_dict_file.xml'
+            'dictionary/tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -130,7 +130,7 @@ class TestDictionary(BaseTestSettings):
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/dict_file_with_invalid_structure.xml'
+            'dictionary/tests/sample_file/dict_file_with_invalid_structure.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -161,7 +161,7 @@ class TestDictionary(BaseTestSettings):
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/csv_file.csv'
+            'dictionary/tests/sample_file/csv_file.csv'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -204,7 +204,7 @@ class TestLesson(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/valid_dict_file.xml'
+            'dictionary/tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:

@@ -47,7 +47,6 @@ class ChangeNumberAnswersForm(forms.Form):
     handeling post request
     """
     required_answers = forms.TypedChoiceField(
-        required=False,
         choices=QUANTITY_CHOICES,
         coerce=int,
         label='',

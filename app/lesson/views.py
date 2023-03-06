@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import FormView
@@ -176,7 +177,7 @@ class ChangeNumberAnswers(LoginRequiredMixin, FormView):
 
     def form_invalid(self, form):
         messages.error(self.request, 'Что-то пошло не так, повторите попытку')
-        return super().form_invalid(form)
+        return HttpResponseNotFound('<h1>Page not found</h1>')
 
     def get_success_url(self):
         return reverse_lazy(
@@ -186,6 +187,9 @@ class ChangeNumberAnswers(LoginRequiredMixin, FormView):
                 'dictionary_pk': self.current_lesson.dictionary.pk
             }
         )
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponseNotFound('<h1>Page not found</h1>')
 
 
 @available_for_learning
