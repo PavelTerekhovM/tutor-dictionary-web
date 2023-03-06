@@ -15,8 +15,7 @@ urlpatterns = [
         name='change_number_answers'
     ),
     path(
-        'change_card_status/<int:user_pk>/'
-        '<int:dictionary_pk>/<int:card_pk>/',
+        'change_card_status/',
         change_card_status,
         name='change_card_status'
     ),

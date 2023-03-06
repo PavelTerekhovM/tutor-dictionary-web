@@ -92,7 +92,7 @@
             <th style="width: 10%" class="align-middle">Статус</th>
         </tr>
         </thead>
-        {% for card in cards %}
+        {% for card in lesson.cards %}
         <thead>
         <tr>
             <th class="align-middle">{{ forloop.counter }}</th>
@@ -100,10 +100,10 @@
             <td class="align-middle">{{ card.word.translations }}</td>
             <td class="align-middle">{{ card.word.example }}</td>
             <td class="align-middle">{{ card.correct_answers }}/{{ card.lesson.required_answers }}</td>
-            <td class="align-middle fw-bold"> {% if card.status == "active" %}Учить{% elif card.status == "done" %}Выучено{% else %}Отложено{% endif %}
-                <form action="{% url 'lesson:change_card_status' card_pk=card.pk user_pk=user.pk dictionary_pk=dictionary.pk %}" method="post">
+            <td class="align-middle fw-bold">
+                <form action="{% url 'lesson:change_card_status' %}" method="post">
                     {% csrf_token %}
-                    {{ form_card.as_p }}
+                    {{ card.form_card.as_p }}
                 </form>
             </td>
         </tr>

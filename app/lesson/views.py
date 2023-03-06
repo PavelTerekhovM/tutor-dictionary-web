@@ -1,11 +1,18 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+
 from django.http import HttpResponseNotFound
+
 from django.shortcuts import render, get_object_or_404, redirect
+
 from django.urls import reverse_lazy
+
+from django.views.decorators.http import require_POST
 from django.views.generic import FormView
 
 from dictionary.decorators import available_for_learning
+
 from lesson.forms import (
     ChangeNumberAnswersForm,
     ChangeCardStatus,
@@ -14,7 +21,6 @@ from lesson.forms import (
 )
 from lesson.models import Lesson, Card
 from dictionary.models import Dictionary
-from django.contrib import messages
 
 
 @available_for_learning
@@ -126,33 +132,29 @@ def learn(request, dictionary_pk, user_pk, card_pk, translation_reverse=False):
 
 
 @login_required
-def change_card_status(request, card_pk, **kwargs):
+@require_POST
+def change_card_status(request):
     """
     The view process the form of changing status
     of cards
-    if active -> done it makes number of answers
-    equal the value required... in lesson
-    if done -> active it sets zero number of answers
     """
+    card_pk = request.POST.get('card_pk')
+    back_url = request.POST.get('back_url')
     card = get_object_or_404(Card, pk=card_pk)
-    if request.method == 'POST':
-        form = ChangeCardStatus(request.POST)
-        if form.is_valid():
-            cd = form.cleaned_data
-            # if change status when number of answers
-            # become equal lesson settings
-            if card.status == 'active' and cd['status'] == 'done':
-                card.correct_answers = card.lesson.required_answers
-            elif card.status == 'done' and cd['status'] == 'active':
-                card.correct_answers = 0
-            card.status = cd['status']
-            card.save()
-            messages.success(request, 'Изменения внесены')
-        else:
-            messages.error(request, 'Что-то пошло не так, повторите попытку')
+    form = ChangeCardStatus(request.POST)
+    if form.is_valid():
+        new_status = form.cleaned_data['status']
+        card.change_status(new_status)
+        messages.success(
+            request,
+            'Изменения внесены'
+        )
     else:
-        form = ChangeCardStatus(initial={'status': card.status})
-    return redirect("lesson:lesson", **kwargs)
+        messages.error(
+            request,
+            'Что-то пошло не так, повторите попытку'
+        )
+    return redirect(back_url)
 
 
 class ChangeNumberAnswers(LoginRequiredMixin, FormView):
@@ -195,42 +197,47 @@ class ChangeNumberAnswers(LoginRequiredMixin, FormView):
 @available_for_learning
 def lesson(request, dictionary_pk, user_pk):
     """
-    The view render or create and render a new lesson
-    Crates all related cards for new lesson
-    Render forms required to change lesson/cards settings
+    The view create and render a new lesson:
+    - crates required cards for new lesson;
+    -  added to context obj lesson, cards;
+    - added to context form to change number of answers;
+    - added to context form to change status of card
     """
     dictionary = Dictionary.objects.\
-        select_related('author').\
-        prefetch_related('word').\
+        select_related('author'). \
         get(pk=dictionary_pk)
 
-    lesson = Lesson.objects.get_or_create(
+    current_lesson, created = Lesson.objects.get_or_create(
         dictionary=dictionary,
-        student=request.user
-    )[0]
-    words = dictionary.word.all()
-    cards = Card.objects.filter(lesson=lesson).\
-        select_related('word').\
-        select_related('lesson')
+        student=request.user,
+    )
 
-    # form_answers - required to change the setting of lesson,
-    # initial need to show value in template
+    if created:
+        current_lesson.create_cards()
+
+    current_lesson.cards = Card.objects.filter(lesson=current_lesson).\
+        select_related('word', 'lesson')
+
+    for card in current_lesson.cards:
+        card.form_card = ChangeCardStatus(
+            initial={
+                'status': card.status,
+                'card_pk': card.pk,
+                'back_url': request.path
+            }
+        )
+
     form_answers = ChangeNumberAnswersForm(
         initial={
-            'required_answers': lesson.required_answers,
-            'lesson_pk': lesson.pk,
+            'required_answers': current_lesson.required_answers,
+            'lesson_pk': current_lesson.pk,
         }
     )
-    for word in words:
-        card = Card.objects.get_or_create(
-            word=word,
-            lesson=lesson
-        )[0]
-    # form_card - required to change the setting of card
-    form_card = ChangeCardStatus()
-    context = dict(dictionary=dictionary,
-                   lesson=lesson,
-                   cards=cards,
-                   form_answers=form_answers,
-                   form_card=form_card)
+
+    context = dict(
+        dictionary=dictionary,
+        lesson=current_lesson,
+        form_answers=form_answers,
+    )
+
     return render(request, 'lesson.html', context=context)

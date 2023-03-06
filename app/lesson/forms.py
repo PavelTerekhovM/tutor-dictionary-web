@@ -1,6 +1,6 @@
 from django import forms
 from dictionary.models import Word
-from lesson.models import Lesson
+from lesson.models import Lesson, Card
 
 QUANTITY_CHOICES = [(i, str(i)) for i in range(1, 11)]
 STATUS_CHOICES = (
@@ -65,3 +65,10 @@ class ChangeCardStatus(forms.Form):
         label='',
         # widget to submit by choosing option
         widget=forms.Select(attrs={'onchange': 'submit();'}))
+    card_pk = forms.ModelChoiceField(
+        queryset=Card.objects.all(),
+        widget=forms.HiddenInput,
+    )
+    back_url = forms.CharField(
+        widget=forms.HiddenInput
+    )
