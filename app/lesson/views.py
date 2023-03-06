@@ -1,15 +1,26 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+
+from django.http import HttpResponseNotFound
+
 from django.shortcuts import render, get_object_or_404, redirect
+
+from django.urls import reverse_lazy
+
+from django.views.decorators.http import require_POST
+from django.views.generic import FormView
+
 from dictionary.decorators import available_for_learning
+
 from lesson.forms import (
-    ChangeNumberAnswers,
+    ChangeNumberAnswersForm,
     ChangeCardStatus,
     LearnForm,
     LearnFormReverse
 )
 from lesson.models import Lesson, Card
 from dictionary.models import Dictionary
-from django.contrib import messages
 
 
 @available_for_learning
@@ -121,89 +132,112 @@ def learn(request, dictionary_pk, user_pk, card_pk, translation_reverse=False):
 
 
 @login_required
-def change_card_status(request, card_pk, **kwargs):
+@require_POST
+def change_card_status(request):
     """
     The view process the form of changing status
     of cards
-    if active -> done it makes number of answers
-    equal the value required... in lesson
-    if done -> active it sets zero number of answers
     """
+    card_pk = request.POST.get('card_pk')
+    back_url = request.POST.get('back_url')
     card = get_object_or_404(Card, pk=card_pk)
-    if request.method == 'POST':
-        form = ChangeCardStatus(request.POST)
-        if form.is_valid():
-            cd = form.cleaned_data
-            # if change status when number of answers
-            # become equal lesson settings
-            if card.status == 'active' and cd['status'] == 'done':
-                card.correct_answers = card.lesson.required_answers
-            elif card.status == 'done' and cd['status'] == 'active':
-                card.correct_answers = 0
-            card.status = cd['status']
-            card.save()
-            messages.success(request, 'Изменения внесены')
-        else:
-            messages.error(request, 'Что-то пошло не так, повторите попытку')
+    form = ChangeCardStatus(request.POST)
+    if form.is_valid():
+        new_status = form.cleaned_data['status']
+        card.change_status(new_status)
+        messages.success(
+            request,
+            'Изменения внесены'
+        )
     else:
-        form = ChangeCardStatus(initial={'status': card.status})
-    return redirect("lesson:lesson", **kwargs)
+        messages.error(
+            request,
+            'Что-то пошло не так, повторите попытку'
+        )
+    return redirect(back_url)
 
 
-@login_required
-def change_number_answers(request, lesson_pk, **kwargs):
+class ChangeNumberAnswers(LoginRequiredMixin, FormView):
     """
     The view process the form of changing required
     number of answers in the lesson and redirect back.
     """
-    lesson = get_object_or_404(Lesson, pk=lesson_pk)
-    form = ChangeNumberAnswers(request.POST)
-    if form.is_valid():
+    current_lesson = None
+    form_class = ChangeNumberAnswersForm
+
+    def form_valid(self, form):
+        lesson_pk = self.request.POST.get('lesson_pk')
+        self.current_lesson = get_object_or_404(
+            Lesson,
+            pk=lesson_pk
+        )
         cd = form.cleaned_data
-        lesson.required_answers = cd['required_answers']
-        lesson.save()
-        messages.success(request, 'Изменения внесены')
-    else:
-        messages.error(request, 'Что-то пошло не так, повторите попытку')
-    return redirect("lesson:lesson", **kwargs)
+        self.current_lesson.required_answers = cd['required_answers']
+        self.current_lesson.save()
+        messages.success(self.request, 'Изменения внесены')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Что-то пошло не так, повторите попытку')
+        return HttpResponseNotFound('<h1>Page not found</h1>')
+
+    def get_success_url(self):
+        return reverse_lazy(
+            "lesson:lesson",
+            kwargs={
+                'user_pk': self.request.user.pk,
+                'dictionary_pk': self.current_lesson.dictionary.pk
+            }
+        )
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponseNotFound('<h1>Page not found</h1>')
 
 
 @available_for_learning
-def lesson(request, dictionary_pk, **kwargs):
+def lesson(request, dictionary_pk, user_pk):
     """
-    The view render or create and render a new lesson
-    Crates all related cards for new lesson
-    Render forms required to change lesson/cards settings
+    The view create and render a new lesson:
+    - crates required cards for new lesson;
+    -  added to context obj lesson, cards;
+    - added to context form to change number of answers;
+    - added to context form to change status of card
     """
     dictionary = Dictionary.objects.\
-        select_related('author').\
-        prefetch_related('word').\
+        select_related('author'). \
         get(pk=dictionary_pk)
 
-    lesson = Lesson.objects.get_or_create(
+    current_lesson, created = Lesson.objects.get_or_create(
         dictionary=dictionary,
-        student=request.user
-    )[0]
-    words = dictionary.word.all()
-    cards = Card.objects.filter(lesson=lesson).\
-        select_related('word').\
-        select_related('lesson')
-
-    # form_answers - required to change the setting of lesson,
-    # initial need to show value in template
-    form_answers = ChangeNumberAnswers(
-        initial={'required_answers': lesson.required_answers}
+        student=request.user,
     )
-    for word in words:
-        card = Card.objects.get_or_create(
-            word=word,
-            lesson=lesson
-        )[0]
-    # form_card - required to change the setting of card
-    form_card = ChangeCardStatus()
-    context = dict(dictionary=dictionary,
-                   lesson=lesson,
-                   cards=cards,
-                   form_answers=form_answers,
-                   form_card=form_card)
+
+    if created:
+        current_lesson.create_cards()
+
+    current_lesson.cards = Card.objects.filter(lesson=current_lesson).\
+        select_related('word', 'lesson')
+
+    for card in current_lesson.cards:
+        card.form_card = ChangeCardStatus(
+            initial={
+                'status': card.status,
+                'card_pk': card.pk,
+                'back_url': request.path
+            }
+        )
+
+    form_answers = ChangeNumberAnswersForm(
+        initial={
+            'required_answers': current_lesson.required_answers,
+            'lesson_pk': current_lesson.pk,
+        }
+    )
+
+    context = dict(
+        dictionary=dictionary,
+        lesson=current_lesson,
+        form_answers=form_answers,
+    )
+
     return render(request, 'lesson.html', context=context)

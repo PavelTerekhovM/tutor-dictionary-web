@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 
 from dictionary.models import Dictionary
-from tests.test_views import BaseTestSettings
+from dictionary.tests.test_views import BaseTestSettings
 
 
 class TestDictionary(BaseTestSettings):
@@ -44,7 +44,7 @@ class TestDictionary(BaseTestSettings):
         # provided file saved in db
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/invalid_extension.jpg'
+            'dictionary/tests/sample_file/invalid_extension.jpg'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -74,7 +74,7 @@ class TestDictionary(BaseTestSettings):
         # provided file saved in db
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'tests/sample_file/invalid_file.xml'
+            'dictionary/tests/sample_file/invalid_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
