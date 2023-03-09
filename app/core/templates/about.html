@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}О проекте{% endblock %}
+
+{% block content %}
+<h5 class="text my-3">О проекте</h5>
+<p class="my-3">Сайт создан в некоммерческих целях для использования словарей, созданных в приложении ABBYY Lingvo
+    tutor.</p>
+<p class="mb-3">Чтобы использовать имеющиеся у вас оригинальные словари Lingvo tutor, зарегистрируйтесь на сайте и загрузите их в формате .xml на сайт через форму <a href="{% url 'dictionary:upload_file' %}" class="text-decoration-none">Добавить словарь</a>.</p>
+<p class="mb-3">Общедоступные словари перечислены в разделе <a href="{% url 'dictionary:list_of_dictionaries' %}" class="text-decoration-none">Словари</a>.</p>
+<p class="mb-3">Загруженные вами словари доступны в разделе  <a href="{% url 'dictionary:my_dictionaries' %}" class="text-decoration-none">Мои словари</a>.</p>
+<p class="my-3">Для перехода к изучению карточек выберите интересующий вас словарь и нажмите "Начать урок".</p>
+{% endblock %}

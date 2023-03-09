@@ -40,13 +40,14 @@ ALLOWED_HOSTS.extend(
 # Application definition
 
 INSTALLED_APPS = [
-    'lesson.apps.LessonConfig',
+    'core.apps.CoreConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'lesson.apps.LessonConfig',
     'dictionary.apps.DictionaryConfig',
     "debug_toolbar",
 
@@ -135,11 +136,13 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = 'core.User'
+
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
-LOGIN_REDIRECT_URL = "list_of_dictionaries"
+LOGIN_REDIRECT_URL = 'dictionary:list_of_dictionaries'
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 

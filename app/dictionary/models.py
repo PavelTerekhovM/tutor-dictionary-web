@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
 from django.urls import reverse
 
 
@@ -10,7 +10,7 @@ class Dictionary(models.Model):
     )
     title = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100)
-    student = models.ManyToManyField(User)
+    student = models.ManyToManyField(settings.AUTH_USER_MODEL)
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=10,
@@ -21,7 +21,7 @@ class Dictionary(models.Model):
     note = models.CharField(max_length=500)
     file = models.FileField(upload_to='file/%Y/%m/%d/')
     author = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='creator_of_dictionary'
     )
@@ -36,7 +36,7 @@ class Dictionary(models.Model):
 
     def get_absolute_url(self):
         return reverse(
-            'dictionary_detail',
+            'dictionary:dictionary_detail',
             kwargs={'slug': self.slug, 'pk': self.pk}
         )
 

@@ -1,10 +1,10 @@
 import os
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from django.test import Client
 
-from django.contrib.auth.models import User
 from django.urls import reverse
 
 from dictionary.models import Dictionary, Word
@@ -22,14 +22,15 @@ class TestChangeNumberAnswers(BaseTestSettings):
             'email': 'user_1@example.com',
             'password': 'testpass123',
         }
-        self.user = User.objects.create_user(**user)
+        self.user = get_user_model().objects.create_user(**user)
 
         user_authenticated = {
             'username': 'test_user_2',
             'email': 'user_2@example.com',
             'password': 'testpass456',
         }
-        self.user_auth = User.objects.create_user(**user_authenticated)
+        self.user_auth = get_user_model()\
+            .objects.create_user(**user_authenticated)
         self.client_auth = Client()
         self.client_auth.force_login(self.user_auth)
 
@@ -40,7 +41,7 @@ class TestChangeNumberAnswers(BaseTestSettings):
 
         with open(sample_file, 'rb') as fp:
             res = self.client_auth.post(
-                reverse('upload_file'),
+                reverse('dictionary:upload_file'),
                 {
                     'author': self.user_auth.pk,
                     'note': 'test file',
@@ -56,7 +57,7 @@ class TestChangeNumberAnswers(BaseTestSettings):
         url = reverse(
             'lesson:change_number_answers'
         )
-        url_redirect = '/login/?next=/change_number_answers/'
+        url_redirect = reverse('login') + '?next=' + url
 
         res = self.client.get(url)
         self.assertEqual(302, res.status_code)
@@ -69,7 +70,7 @@ class TestChangeNumberAnswers(BaseTestSettings):
         url = reverse(
             'lesson:change_number_answers'
         )
-        url_redirect = '/login/?next=/change_number_answers/'
+        url_redirect = reverse('login') + '?next=' + url
 
         res = self.client.post(url)
         self.assertEqual(302, res.status_code)
@@ -139,14 +140,15 @@ class TestChangeCardStatus(BaseTestSettings):
             'email': 'user_1@example.com',
             'password': 'testpass123',
         }
-        self.user = User.objects.create_user(**user)
+        self.user = get_user_model().objects.create_user(**user)
 
         user_authenticated = {
             'username': 'test_user_2',
             'email': 'user_2@example.com',
             'password': 'testpass456',
         }
-        self.user_auth = User.objects.create_user(**user_authenticated)
+        self.user_auth = get_user_model()\
+            .objects.create_user(**user_authenticated)
         self.client_auth = Client()
         self.client_auth.force_login(self.user_auth)
 
@@ -157,7 +159,7 @@ class TestChangeCardStatus(BaseTestSettings):
 
         with open(sample_file, 'rb') as fp:
             res = self.client_auth.post(
-                reverse('upload_file'),
+                reverse('dictionary:upload_file'),
                 {
                     'author': self.user_auth.pk,
                     'note': 'test file',
@@ -173,7 +175,7 @@ class TestChangeCardStatus(BaseTestSettings):
         url = reverse(
             'lesson:change_card_status'
         )
-        url_redirect = '/login/?next=/change_card_status/'
+        url_redirect = reverse('login') + '?next=' + url
 
         res = self.client.get(url)
         self.assertEqual(302, res.status_code)
@@ -186,7 +188,7 @@ class TestChangeCardStatus(BaseTestSettings):
         url = reverse(
             'lesson:change_card_status'
         )
-        url_redirect = '/login/?next=/change_card_status/'
+        url_redirect = reverse('login') + '?next=' + url
 
         res = self.client.post(url)
         self.assertEqual(302, res.status_code)

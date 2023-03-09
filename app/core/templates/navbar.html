@@ -8,20 +8,20 @@
             <ul class="navbar-nav">
                 {% if request.user.is_authenticated %}
                 <li class="nav-item">
-                    <a href="{% url 'my_dictionaries' %}" class="nav-link px-2 text-muted">Мои словари</a>
+                    <a href="{% url 'dictionary:my_dictionaries' %}" class="nav-link px-2 text-muted">Мои словари</a>
                 </li>
                 {% endif %}
                 <li class="nav-item">
-                    <a href="{% url 'list_of_dictionaries' %}" class="nav-link px-2 text-muted">Словари</a>
+                    <a href="{% url 'dictionary:list_of_dictionaries' %}" class="nav-link px-2 text-muted">Словари</a>
                 </li>
 
                 {% if request.user.is_authenticated %}
                 <li class="nav-item">
-                    <a href="{% url 'upload_file' %}" class="nav-link px-2 text-muted">Добавить словарь</a>
+                    <a href="{% url 'dictionary:upload_file' %}" class="nav-link px-2 text-muted">Добавить словарь</a>
                 </li>
                 {% endif %}
                 <li class="nav-item">
-                    <a href="{% url 'dictionary_search' %}" class="nav-link px-2 text-muted">Поиск</a>
+                    <a href="{% url 'dictionary:dictionary_search' %}" class="nav-link px-2 text-muted">Поиск</a>
                 </li>
                 <li class="nav-item">
                     <a href="{% url 'about' %}" class="nav-link px-2 text-muted">О проекте</a>

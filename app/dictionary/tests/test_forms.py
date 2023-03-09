@@ -1,10 +1,10 @@
 import os
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from django.test import Client
 
-from django.contrib.auth.models import User
 from django.urls import reverse
 
 from dictionary.models import Dictionary
@@ -21,14 +21,15 @@ class TestDictionary(BaseTestSettings):
             'email': 'user_1@example.com',
             'password': 'testpass123',
         }
-        self.user = User.objects.create_user(**user)
+        self.user = get_user_model().objects.create_user(**user)
 
         user_authenticated = {
             'username': 'test_user_2',
             'email': 'user_2@example.com',
             'password': 'testpass456',
         }
-        self.user_auth = User.objects.create_user(**user_authenticated)
+        self.user_auth = get_user_model()\
+            .objects.create_user(**user_authenticated)
         self.client_auth = Client()
         self.client_auth.force_login(self.user_auth)
 
@@ -37,7 +38,7 @@ class TestDictionary(BaseTestSettings):
         Testing form uploading dictionary with invalid extension
         """
         url = reverse(
-            'upload_file'
+            'dictionary:upload_file'
         )
 
         # testing POST request: status code 302,
@@ -67,7 +68,7 @@ class TestDictionary(BaseTestSettings):
         Testing form uploading dictionary with invalid structure
         """
         url = reverse(
-            'upload_file'
+            'dictionary:upload_file'
         )
 
         # testing POST request: status code 302,
