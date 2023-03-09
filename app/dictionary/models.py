@@ -3,6 +3,14 @@ from django.db import models
 from django.urls import reverse
 
 
+class DetailManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset()\
+            .select_related('author')\
+            .prefetch_related('student')\
+            .prefetch_related('word')
+
+
 class Dictionary(models.Model):
     STATUS_CHOICES = (
         ('private', 'Private'),
@@ -26,6 +34,9 @@ class Dictionary(models.Model):
         related_name='creator_of_dictionary'
     )
 
+    objects = models.Manager()
+    detail_objects = DetailManager()
+
     class Meta:
         ordering = ('title',)
         verbose_name = 'Словарь'
@@ -37,7 +48,7 @@ class Dictionary(models.Model):
     def get_absolute_url(self):
         return reverse(
             'dictionary:dictionary_detail',
-            kwargs={'slug': self.slug, 'pk': self.pk}
+            kwargs={'pk': self.pk}
         )
 
 

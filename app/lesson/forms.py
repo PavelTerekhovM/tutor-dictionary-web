@@ -64,7 +64,8 @@ class ChangeCardStatus(forms.Form):
         choices=STATUS_CHOICES,
         label='',
         # widget to submit by choosing option
-        widget=forms.Select(attrs={'onchange': 'submit();'}))
+        widget=forms.Select(attrs={'onchange': 'submit();'})
+    )
     card_pk = forms.ModelChoiceField(
         queryset=Card.objects.all(),
         widget=forms.HiddenInput,

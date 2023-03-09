@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST, require_GET
 from django.views.generic import ListView, DetailView, CreateView
+from django.views.generic.edit import FormMixin
 
 from dictionary.decorators import author_required
 from dictionary.forms import AddStudentForm, DictionaryForm, SearchForm
@@ -15,21 +16,21 @@ from dictionary.models import Dictionary
 
 @login_required
 @require_POST
-def student_add(request, pk, **kwargs):
+def student_add(request):
     """
     Function adds a current user to the list of
     student and redirect to lesson detail.
     """
-    dictionary = get_object_or_404(Dictionary, pk=pk)
+    dictionary_pk = request.POST.get('dictionary_pk')
+    dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
     user = request.user
     form = AddStudentForm(request.POST)
     if form.is_valid():
-        cd = form.cleaned_data
         dictionary.student.add(user)
         messages.success(request, 'Вы успешно добавили словарь')
     else:
         messages.error(request, 'Что-то пошло не так, повторите попытку')
-    return redirect('lesson:lesson', user.pk, pk)
+    return redirect('lesson:lesson', user.pk, dictionary_pk)
 
 
 @login_required
@@ -47,7 +48,7 @@ def student_remove(request, slug, pk):
         messages.error(request, 'Что-то пошло не так, повторите попытку')
     else:
         messages.success(request, 'Вы успешно удалили словарь')
-    return redirect('dictionary_detail', slug, pk)
+    return redirect('dictionary:dictionary_detail', pk)
 
 
 @author_required
@@ -138,19 +139,27 @@ class My_dictionary_list(LoginRequiredMixin, ListView):
         ).select_related('author').prefetch_related('word')
 
 
-class Dictionary_detail(DetailView):
-    model = Dictionary
-    student_add_form = AddStudentForm
+class Dictionary_detail(FormMixin, DetailView):
+    """
+    Class view to render detail view of dictionary
+    AddStudentForm to add the dictionary for studing
+    """
+    form_class = AddStudentForm
     template_name = "dictionary/detail.html"
     context_object_name = 'dictionary'
-    queryset = Dictionary.objects.all().\
-        select_related('author').\
-        prefetch_related('word')
+    queryset = Dictionary.detail_objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['student_add_form'] = AddStudentForm(
+            initial={'dictionary_pk': self.object.pk}
+        )
+        return context
 
 
 class AddDictionaryView(LoginRequiredMixin, CreateView):
     """
-    form.save() handling creating all objects required to
+    View which handling creating all objects required to
     create new dictionary
     """
     form_class = DictionaryForm

@@ -9,7 +9,7 @@ from django.test import Client
 
 from django.urls import reverse
 
-from dictionary.models import Dictionary
+from dictionary.models import Dictionary, Word
 
 
 class BaseTestSettings(TestCase):
@@ -30,7 +30,7 @@ class BaseTestSettings(TestCase):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
-class TestDictionary(BaseTestSettings):
+class AddDictionaryView(BaseTestSettings):
     """
     Testcase for testing views of dictionary-app
     """
@@ -184,3 +184,92 @@ class TestDictionary(BaseTestSettings):
             'Загруженный файл не был распознан',
             res.context.get('form').errors.get('file')[0]
         )
+
+
+class Dictionary_detail(BaseTestSettings):
+    """
+    Testcase for testing rendering Dictionary_detail view
+    """
+    def setUp(self):
+        user = {
+            'username': 'test_user_1',
+            'email': 'user_1@example.com',
+            'password': 'testpass123',
+        }
+        self.user = get_user_model().objects.create_user(**user)
+
+        user_authenticated = {
+            'username': 'test_user_2',
+            'email': 'user_2@example.com',
+            'password': 'testpass456',
+        }
+        self.user_auth = get_user_model()\
+            .objects.create_user(**user_authenticated)
+        self.client_auth = Client()
+        self.client_auth.force_login(self.user_auth)
+
+        new_word = {'body': 'test_word', 'translations': 'слово'}
+        self.new_word = Word.objects.create(**new_word)
+
+        new_dict = {
+            'title': 'test_dict',
+            'status': 'public',
+            'author': self.user_auth
+        }
+        self.new_dict = Dictionary.objects.create(**new_dict)
+        self.new_dict.word.add(self.new_word)
+
+    def test_Dictionary_detail_unauth(self):
+        """
+        Testing rendering dictionaries for unauthenticated users
+        """
+        url = reverse(
+            'dictionary:dictionary_detail',
+            kwargs={'pk': Dictionary.objects.latest('created').pk}
+        )
+        self.assertEqual(1, len(Dictionary.objects.all()))
+        self.assertEqual(1, len(Word.objects.all()))
+
+        res = self.client.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'AddStudentForm',
+            res.context_data.get('form').__class__.__name__
+        )
+
+    def test_Dictionary_detail_auth(self):
+        """
+        Testing rendering dictionaries for authenticated users
+        """
+        url = reverse(
+            'dictionary:dictionary_detail',
+            kwargs={'pk': Dictionary.objects.latest('created').pk}
+        )
+        self.assertEqual(1, len(Dictionary.objects.all()))
+        self.assertEqual(1, len(Word.objects.all()))
+
+        res = self.client_auth.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'AddStudentForm',
+            res.context_data.get('form').__class__.__name__
+        )
+
+
+

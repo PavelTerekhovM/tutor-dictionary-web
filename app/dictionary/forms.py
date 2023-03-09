@@ -9,10 +9,10 @@ from .models import Dictionary
 
 
 class AddStudentForm(forms.Form):
-    update = forms.BooleanField(
-        required=False,
-        initial=False,
-        widget=forms.HiddenInput
+    dictionary_pk = forms.ModelChoiceField(
+        queryset=Dictionary.objects.all(),
+        required=True,
+        widget=forms.HiddenInput,
     )
 
 

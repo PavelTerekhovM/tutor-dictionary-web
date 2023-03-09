@@ -32,12 +32,12 @@ urlpatterns = [
         name='upload_file'
     ),
     path(
-        '<slug:slug>/<int:pk>/',
+        '<int:pk>/',
         Dictionary_detail.as_view(),
-        name="dictionary_detail"
+        name='dictionary_detail'
     ),
     path(
-        'add/<slug:slug>/<int:pk>/',
+        'add/',
         student_add,
         name='student_add'
     ),

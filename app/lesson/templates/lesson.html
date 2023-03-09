@@ -17,9 +17,10 @@
         <div>
             {% if request.user in dictionary.student.all %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'student_remove' dictionary.slug dictionary.pk %}" class="text-decoration-none text-muted">Убрать из моих словарей</a></button>
+                    href="{% url 'dictionary:student_remove' dictionary.slug dictionary.pk %}"
+                    class="text-decoration-none text-muted">Убрать из моих словарей</a></button>
             {% else %}
-            <form action="{% url 'student_add' dictionary.slug dictionary.pk %}" method="post">
+            <form action="{% url 'dictionary:student_add'%}" method="post">
                 {{ student_add_form }}
                 {% csrf_token %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Добавить в мои словари</button>
@@ -113,7 +114,9 @@
 </div>
 
 <div>
+    {% if dictionary.file %}
     <button class="py-1 mt-1 mb-2 btn btn-outline-dark rounded-0" type="submit"><a href="{{ dictionary.file.url }}" class="text-decoration-none text-muted" download>Скачать фаил</a></button>
+    {% endif %}
 </div>
 
 {% endblock %}
