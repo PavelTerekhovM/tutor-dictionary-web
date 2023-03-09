@@ -20,7 +20,7 @@ urlpatterns = [
         name='change_card_status'
     ),
     path(
-        'lesson/<int:user_pk>/<int:dictionary_pk>/',
+        '<int:user_pk>/<int:dictionary_pk>/',
         lesson,
         name='lesson'
     ),

@@ -1,19 +1,16 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.messages.views import SuccessMessageMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.generic.list import ListView
-from django.views.generic.detail import DetailView
-from .models import Dictionary
-from .forms import DictionaryForm, AddStudentForm, SearchForm
 from django.urls import reverse_lazy
-from .forms import UserRegistrationForm
-from django.views.generic.edit import CreateView
 from django.views.decorators.http import require_POST, require_GET
-from .decorators import author_required
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from django.contrib import messages
+from django.views.generic import ListView, DetailView, CreateView
+
+from dictionary.decorators import author_required
+from dictionary.forms import AddStudentForm, DictionaryForm, SearchForm
+from dictionary.models import Dictionary
 
 
 @login_required
@@ -105,13 +102,6 @@ def dictionary_delete(request, pk, **kwargs):
     return redirect('my_dictionaries')
 
 
-class SignUpView(SuccessMessageMixin, CreateView):
-    template_name = 'registration/register.html'
-    success_url = reverse_lazy('login')
-    form_class = UserRegistrationForm
-    success_message = "Вы успешно зарегистрировались на сайте Lingvo tutor"
-
-
 class Dictionary_list(ListView):
     """
     view makes list all public dictionaries, then
@@ -164,8 +154,8 @@ class AddDictionaryView(LoginRequiredMixin, CreateView):
     create new dictionary
     """
     form_class = DictionaryForm
-    template_name = "dictionary/upload_file.html"
-    success_url = reverse_lazy("my_dictionaries")
+    template_name = 'dictionary/upload_file.html'
+    success_url = reverse_lazy('dictionary:my_dictionaries')
 
     def get_initial(self):
         """
@@ -212,7 +202,3 @@ def dictionary_search(request):
             ).distinct()
     return render(request, 'dictionary/search.html',
                   {'form': form, 'query': query, 'results': results})
-
-
-def about(request):
-    return render(request, 'dictionary/about.html',)

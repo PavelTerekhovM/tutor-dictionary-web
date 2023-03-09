@@ -18,12 +18,16 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from core.views import about
 
 urlpatterns = [
+    path('', about, name='about'),
     path('admin/', admin.site.urls),
-    path('', include('dictionary.urls')),
-    path('', include('lesson.urls', namespace='lesson')),
+    path('accounts/', include('core.urls')),
+    path('dictionary/', include('dictionary.urls', namespace='dictionary')),
+    path('lesson/', include('lesson.urls', namespace='lesson')),
 ]
+
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns = [

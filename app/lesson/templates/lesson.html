@@ -34,14 +34,14 @@
                     class="text-decoration-none text-muted">Сделать публичным</a></button>
             {% else %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'make_private' dictionary.slug dictionary.pk %}"
+                    href="{% url 'dictionary:make_private' dictionary.slug dictionary.pk %}"
                     class="text-decoration-none text-muted">Сделать приватным</a></button>
             {% endif %}
         </div>
 
         <div>
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'dictionary_delete' dictionary.slug dictionary.pk %}" class="text-decoration-none text-muted">Удалить</a></button>
+                    href="{% url 'dictionary:dictionary_delete' dictionary.slug dictionary.pk %}" class="text-decoration-none text-muted">Удалить</a></button>
         </div>
         {% endif %}
     </div>

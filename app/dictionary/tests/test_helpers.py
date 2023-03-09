@@ -1,7 +1,7 @@
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 from dictionary.helpers import DictionaryFileManager
 from dictionary.models import Dictionary
@@ -18,7 +18,7 @@ class TestDictionary(BaseTestSettings):
             'email': 'user_1@example.com',
             'password': 'testpass123',
         }
-        self.user = User.objects.create_user(**user)
+        self.user = get_user_model().objects.create_user(**user)
 
     def test_DictionaryFileManager_clean_valid_xml(self):
         """

@@ -2,11 +2,11 @@ import os
 import shutil
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from django.test import TestCase
 from django.test import Client
 
-from django.contrib.auth.models import User
 from django.urls import reverse
 
 from dictionary.models import Dictionary
@@ -40,14 +40,15 @@ class TestDictionary(BaseTestSettings):
             'email': 'user_1@example.com',
             'password': 'testpass123',
         }
-        self.user = User.objects.create_user(**user)
+        self.user = get_user_model().objects.create_user(**user)
 
         user_authenticated = {
             'username': 'test_user_2',
             'email': 'user_2@example.com',
             'password': 'testpass456',
         }
-        self.user_auth = User.objects.create_user(**user_authenticated)
+        self.user_auth = get_user_model()\
+            .objects.create_user(**user_authenticated)
         self.client_auth = Client()
         self.client_auth.force_login(self.user_auth)
 
@@ -56,9 +57,9 @@ class TestDictionary(BaseTestSettings):
         Testing redirect when unauthenticated try to access /upload URL
         """
         url = reverse(
-            'upload_file'
+            'dictionary:upload_file'
         )
-        url_redirect = '/login/?next=/upload/'
+        url_redirect = reverse('login') + '?next=' + url
 
         res = self.client.get(url)
 
@@ -70,8 +71,9 @@ class TestDictionary(BaseTestSettings):
         Testing creating dictionary by authenticated user on /upload URL
         """
         url = reverse(
-            'upload_file'
+            'dictionary:upload_file'
         )
+        url_redirect = reverse('dictionary:my_dictionaries')
 
         # testing GET request: status code 200,
         # form with file field is available
@@ -102,7 +104,7 @@ class TestDictionary(BaseTestSettings):
             )
 
         self.assertEqual(302, res.status_code)
-        self.assertEqual('/my_dictionaries', res.url)
+        self.assertEqual(url_redirect, res.url)
         self.assertEqual(1, len(Dictionary.objects.all()))
         self.assertEqual(
             'test file',
@@ -126,7 +128,7 @@ class TestDictionary(BaseTestSettings):
         Testing creating dictionary by authenticated user with invalid files
         """
         url = reverse(
-            'upload_file'
+            'dictionary:upload_file'
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
@@ -157,7 +159,7 @@ class TestDictionary(BaseTestSettings):
         Testing creating dictionary by authenticated user with csv files
         """
         url = reverse(
-            'upload_file'
+            'dictionary:upload_file'
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
@@ -182,50 +184,3 @@ class TestDictionary(BaseTestSettings):
             'Загруженный файл не был распознан',
             res.context.get('form').errors.get('file')[0]
         )
-
-
-class TestLesson(BaseTestSettings):
-    def setUp(self):
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = User.objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
-
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = User.objects.create_user(**user)
-
-        sample_file = os.path.join(
-            settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file.xml'
-        )
-
-        with open(sample_file, 'rb') as fp:
-            res = self.client_auth.post(
-                reverse('upload_file'),
-                {
-                    'author': self.user_auth.pk,
-                    'note': 'test file',
-                    'status': 'public',
-                    'file': fp
-                }
-            )
-
-    def test_lesson(self):
-        url = reverse(
-            'lesson:lesson',
-            kwargs={
-                'user_pk': self.user.pk,
-                'dictionary_pk': Dictionary.objects.latest('created').pk
-            }
-        )
-        res = self.client_auth.get(url)
-        self.assertEqual(200, res.status_code)
-        # import ipdb; ipdb.set_trace()

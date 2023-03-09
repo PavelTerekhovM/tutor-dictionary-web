@@ -3,18 +3,24 @@
 {% block title %}Вход в Lingvo tutor{% endblock %}
 
 {% block content %}
-<h3>Вход в Lingvo tutor</h3>
+<h3 class="pt-4 pb-2">Вход в Lingvo tutor</h3>
 {% if form.errors %}
-    <p>Имя или пароль указанны неверно, пожалуйста, повторите вход</p>
+    <p>Имя или пароль указанны неверно, попробуйте еще раз</p>
 {% else %}
     <p>Для входа укажите свое имя и пароль</p>
 {% endif %}
 <div class="login-form">
     <form action="{% url 'login' %}" method="post">
-        {{ form.as_p }}
+        {% for field in form  %}
+        <div class="py-1">
+            {{ field.label_tag }} {{ field }}
+            {% if field.help_text %}
+            {% endif %}
+        </div>
+        {% endfor %}
         {% csrf_token %}
-        <div class="d-grid gap-2 d-md-block pb-4">
-            <button type="submit" class="btn btn-outline-secondary">Вход</button>
+        <div class="d-grid gap-2 d-md-block py-2">
+            <button type="submit" class="btn btn-outline-secondary px-2">Вход</button>
             <button type="button" class="btn btn-outline-secondary"><a href="{% url 'password_reset' %}" class="text-decoration-none text-muted">Восстановление пароля</a></button>
         </div>
     </form>

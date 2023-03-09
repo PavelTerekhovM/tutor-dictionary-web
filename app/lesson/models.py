@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 from dictionary.models import Dictionary, Word
 from django.urls import reverse
@@ -15,7 +15,7 @@ class Lesson(models.Model):
         on_delete=models.CASCADE,
     )
     student = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
     required_answers = models.IntegerField(
