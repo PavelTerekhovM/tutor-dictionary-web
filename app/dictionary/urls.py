@@ -3,8 +3,8 @@ from .views import (
     Dictionary_list,
     My_dictionary_list,
     Dictionary_detail,
-    add_student,
-    student_remove,
+    add_dictionary,
+    remove_dictionary,
     make_public,
     make_private,
     dictionary_delete,
@@ -38,13 +38,13 @@ urlpatterns = [
     ),
     path(
         'add/',
-        add_student,
-        name='student_add'
+        add_dictionary,
+        name='add_dictionary'
     ),
     path(
-        'remove/<slug:slug>/<int:pk>/',
-        student_remove,
-        name='student_remove'
+        'remove/',
+        remove_dictionary,
+        name='remove_dictionary'
     ),
     path(
         'make_public/<slug:slug>/<int:pk>/',

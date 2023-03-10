@@ -19,15 +19,17 @@
 <!-- button "add my dictionaries (follow)" -->
     <div class="w-25 justify-content-end">
         {% if request.user not in dictionary.student.all and dictionary.author %}
-            <form action="{% url 'dictionary:student_add' %}" method="post">
-                {{ student_add_form }}
+            <form action="{% url 'dictionary:add_dictionary' %}" method="post">
+                {{ student_form }}
                 {% csrf_token %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Добавить в мои словари</button>
+            <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Изучать</button>
             </form>
         {% else %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                        href="{% url 'dictionary:student_remove' dictionary.slug dictionary.pk %}"
-                        class="text-decoration-none text-muted">Убрать из моих словарей</a></button>
+            <form action="{% url 'dictionary:remove_dictionary' %}" method="post">
+                {{ student_form }}
+                {% csrf_token %}
+            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit">Убрать из моих словарей</button>
+
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
                     href="{% url 'lesson:lesson' user.pk dictionary.pk %}"
                     class="text-decoration-none text-muted">Изучать</a></button>

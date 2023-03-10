@@ -1,54 +1,53 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView
 from django.views.generic.edit import FormMixin
+from django.db.models import Q
 
 from dictionary.decorators import author_required
-from dictionary.forms import AddStudentForm, DictionaryForm, SearchForm
+from dictionary.forms import StudentForm, DictionaryForm, SearchForm
 from dictionary.models import Dictionary
 
 
 @login_required
 @require_POST
-def add_student(request):
+def add_dictionary(request):
     """
-    Function adds a current user to the list of
-    student and redirect to lesson detail.
+    Function to add dictionary to my_dictionary
     """
     dictionary_pk = request.POST.get('dictionary_pk')
     dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
     user = request.user
-    form = AddStudentForm(request.POST)
+    form = StudentForm(request.POST)
     if form.is_valid():
         dictionary.student.add(user)
         messages.success(request, 'Вы успешно добавили словарь')
     else:
         messages.error(request, 'Что-то пошло не так, повторите попытку')
-    return redirect('dictionary:dictionary_detail', dictionary_pk)
+    return redirect('lesson:lesson', user.pk, dictionary_pk)
 
 
 @login_required
-@require_GET
-def student_remove(request, slug, pk):
+@require_POST
+def remove_dictionary(request):
     """
-    Function removes a current user from the list of
-    student and redirect to dictionary detail back.
+    Function to remove dictionary from my_dictionary
     """
-    dictionary = get_object_or_404(Dictionary, pk=pk)
+    dictionary_pk = request.POST.get('dictionary_pk')
+    dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
     user = request.user
-    try:
+    form = StudentForm(request.POST)
+    if form.is_valid():
         dictionary.student.remove(user)
-    except:
-        messages.error(request, 'Что-то пошло не так, повторите попытку')
-    else:
         messages.success(request, 'Вы успешно удалили словарь')
-    return redirect('dictionary:dictionary_detail', pk)
+    else:
+        messages.error(request, 'Что-то пошло не так, повторите попытку')
+    return redirect('dictionary:dictionary_detail', dictionary_pk)
 
 
 @author_required
@@ -105,19 +104,16 @@ def dictionary_delete(request, pk, **kwargs):
 
 class Dictionary_list(ListView):
     """
-    view makes list all public dictionaries, then
-    template additionally excludes dictionaries where
-    the user is in the student list or author
+    View render list all public dictionaries which user is not
+    author or student
     """
     model = Dictionary
     paginate_by = 1
-
-    queryset = Dictionary.objects.filter(status="public").\
-        select_related('author')\
-        .prefetch_related('word')
-
     template_name = "dictionary/list.html"
     context_object_name = 'dictionaries'
+
+    def get_queryset(self):
+        return Dictionary.detail_objects.get_available(self.request.user)
 
 
 class My_dictionary_list(LoginRequiredMixin, ListView):
@@ -127,16 +123,7 @@ class My_dictionary_list(LoginRequiredMixin, ListView):
     context_object_name = 'dictionaries'
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(
-            Q(
-                author=self.request.user
-            ) | (Q(
-                student=self.request.user
-            ) & Q(
-                status='public'
-            ))
-        ).select_related('author').prefetch_related('word')
+        return Dictionary.detail_objects.get_my_dict(self.request.user)
 
 
 class Dictionary_detail(FormMixin, DetailView):
@@ -144,14 +131,14 @@ class Dictionary_detail(FormMixin, DetailView):
     Class view to render detail view of dictionary
     AddStudentForm to add the dictionary for studing
     """
-    form_class = AddStudentForm
+    form_class = StudentForm
     template_name = "dictionary/detail.html"
     context_object_name = 'dictionary'
     queryset = Dictionary.detail_objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['student_add_form'] = AddStudentForm(
+        context['student_form'] = StudentForm(
             initial={'dictionary_pk': self.object.pk}
         )
         return context

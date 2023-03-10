@@ -32,16 +32,16 @@
       <div class="text-end">
         {% if request.user.is_authenticated %}
         <ul class="navbar-nav">
-          <li class="text-decoration-none text-body me-1 d-flex align-items-center nav-link text-muted">Здравствуй, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user }}{% endif %}</li>
-          <li class="nav-item">
-            <button type="button" class="btn btn-outline-secondary me-2"><a href="{% url 'password_change' %}" class="text-decoration-none text-muted">Изменить пароль</a></button>
-          </li>
-          <li class="nav-item">
-            <button type="button" class="btn btn-outline-secondary"><a href="{% url 'logout' %}" class="text-decoration-none text-muted">Выйти</a></button>
-          </li>
+          <li class="text-decoration-none text-body d-flex align-items-center nav-link text-muted pe-0 me-0">Здравствуй, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user }}{% endif %}</li>
+
+          <li class="nav-item"><button type="button" class="btn btn-outline-secondary ms-2"><a
+                  href="{% url 'password_change' %}" class="text-decoration-none text-muted">Изменить пароль</a></button></li>
+
+          <li class="nav-item"><button type="button" class="btn btn-outline-secondary ms-2"><a
+                  href="{% url 'logout' %}" class="text-decoration-none text-muted">Выйти</a></button></li>
         {% else %}
           <button type="button" class="btn btn-outline-secondary"><a href="{% url 'login' %}" class="text-decoration-none text-muted">Войти</a></button>
-          <button type="button" class="btn btn-outline-secondary ms-1"><a href="{% url 'register' %}" class="text-decoration-none text-muted">Регистрация</a></button>
+          <button type="button" class="btn btn-outline-secondary"><a href="{% url 'register' %}" class="text-decoration-none text-muted">Регистрация</a></button>
         {% endif %}
       </div>
     </div>

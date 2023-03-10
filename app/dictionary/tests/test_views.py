@@ -1,8 +1,10 @@
 import os
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from django.urls import reverse
+from django.test import Client
 
 from core.tests.base_settings import BaseTestSettings
 from dictionary.models import Dictionary, Word
@@ -186,7 +188,7 @@ class Dictionary_detail(BaseTestSettings):
             res.template_name[0]
         )
         self.assertEqual(
-            'AddStudentForm',
+            'StudentForm',
             res.context_data.get('form').__class__.__name__
         )
 
@@ -212,6 +214,124 @@ class Dictionary_detail(BaseTestSettings):
             res.template_name[0]
         )
         self.assertEqual(
-            'AddStudentForm',
+            'StudentForm',
             res.context_data.get('form').__class__.__name__
+        )
+
+
+class AddRemoveDictionary(BaseTestSettings):
+    """
+    Testcase for testing add_dictionary and remove views
+    """
+
+    def setUp(self):
+        new_word = {'body': 'test_word', 'translations': 'слово'}
+        self.new_word = Word.objects.create(**new_word)
+
+        new_dict = {
+            'title': 'test_dict',
+            'status': 'public',
+            'author': self.user_auth
+        }
+        self.new_dict = Dictionary.objects.create(**new_dict)
+        self.new_dict.word.add(self.new_word)
+
+        new_auth_user = {
+            'username': 'test_user_3',
+            'email': 'user_3@example.com',
+            'password': 'testpass123',
+        }
+        self.new_auth_user = get_user_model().objects.create_user(
+            **new_auth_user
+        )
+        self.client_new_auth_user = Client()
+        self.client_new_auth_user.force_login(self.new_auth_user)
+
+    def test_add_dictionary(self):
+        """
+        Testing add view to test:
+        - create a dictionary with self.user_auth author
+        - create a second auth user
+        - send a POST request to add new user to this dictionary
+        """
+        url = reverse(
+            'dictionary:add_dictionary'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+
+        self.assertEqual(
+            0, len(Dictionary.objects.latest('created').student.all())
+        )
+        # test that only POST and authorised users allowed
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+        url_redirect = reverse(
+            'lesson:lesson',
+            kwargs={
+                'user_pk': self.new_auth_user.pk,
+                'dictionary_pk': Dictionary.objects.latest('created').pk,
+            }
+        )
+
+        res = self.client_new_auth_user.post(
+            url,
+            payload,
+        )
+        # test that POST was successfully handled
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # test that that number of students changed
+        self.assertEqual(
+            1, len(Dictionary.objects.latest('created').student.all())
+        )
+
+    def test_remove_dictionary(self):
+        """
+        Testing remove view to test:
+        - create a dictionary with self.user_auth author
+        - create a second auth user
+        - add second user to students
+        - send a POST request to add new user to this dictionary
+        """
+        url = reverse(
+            'dictionary:remove_dictionary'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+
+        self.new_dict.student.add(self.new_auth_user)
+        self.assertEqual(
+            1, len(Dictionary.objects.latest('created').student.all())
+        )
+        # test that only POST and authorised users allowed
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        url_redirect = reverse(
+            'dictionary:dictionary_detail',
+            kwargs={
+                'pk': Dictionary.objects.latest('created').pk,
+            }
+        )
+        res = self.client_new_auth_user.post(
+            url,
+            payload,
+        )
+        # test that POST was successfully handled
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # test that that number of students changed
+        self.assertEqual(
+            0, len(Dictionary.objects.latest('created').student.all())
         )

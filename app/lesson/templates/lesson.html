@@ -16,12 +16,13 @@
         {% if request.user != dictionary.author %}
         <div>
             {% if request.user in dictionary.student.all %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'dictionary:student_remove' dictionary.slug dictionary.pk %}"
-                    class="text-decoration-none text-muted">Убрать из моих словарей</a></button>
+            <form action="{% url 'dictionary:remove_dictionary' %}" method="post">
+                {{ student_form }}
+                {% csrf_token %}
+            <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Убрать из моих словарей</button>
             {% else %}
             <form action="{% url 'dictionary:student_add'%}" method="post">
-                {{ student_add_form }}
+                {{ student_form }}
                 {% csrf_token %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Добавить в мои словари</button>
             </form>
@@ -31,7 +32,7 @@
         <div>
             {% if dictionary.status == "private" %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'make_public' dictionary.slug dictionary.pk %}"
+                    href="{% url 'dictionary:make_public' dictionary.slug dictionary.pk %}"
                     class="text-decoration-none text-muted">Сделать публичным</a></button>
             {% else %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a

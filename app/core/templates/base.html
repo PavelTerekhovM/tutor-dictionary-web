@@ -33,7 +33,6 @@
                     </div>
                 {% endfor %}
             {% endif %}
-
             {% block content %}
             {% endblock %}
         </div>
@@ -63,15 +62,24 @@
 <script src="/static/js/jquery-2.2.4.min.js"></script>
 <script src="/static/js/jquery.waypoints.min.js"></script>
 <script src="/static/js/infinite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+
 <script>
-    var infinite = new Waypoint.Infinite({
-        element: $('.infinite-container')[0],
-        onBeforePageLoad: function () {
-        $('.loading').show();
-        },
-        onAfterPageLoad: function ($items) {
-        $('.loading').hide();
+    var csrftoken = Cookies.get('csrftoken');
+    function csrfSafeMethod(method) {
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type)) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
         }
+    });
+
+    $(document).ready(function() {
+        {% block domready %}
+        {% endblock %}
     });
 </script>
 <!--end infinite scroll and waypoints-->

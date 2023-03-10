@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import FormView
 
 from dictionary.decorators import available_for_learning
+from dictionary.forms import StudentForm
 
 from lesson.forms import (
     ChangeNumberAnswersForm,
@@ -226,7 +227,11 @@ def lesson(request, dictionary_pk, user_pk):
                 'back_url': request.path
             }
         )
-
+    student_form = StudentForm(
+        initial={
+            'dictionary_pk': dictionary,
+        }
+    )
     form_answers = ChangeNumberAnswersForm(
         initial={
             'required_answers': current_lesson.required_answers,
@@ -238,6 +243,7 @@ def lesson(request, dictionary_pk, user_pk):
         dictionary=dictionary,
         lesson=current_lesson,
         form_answers=form_answers,
+        student_form=student_form,
     )
 
     return render(request, 'lesson.html', context=context)

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 
 
@@ -9,6 +10,17 @@ class DetailManager(models.Manager):
             .select_related('author')\
             .prefetch_related('student')\
             .prefetch_related('word')
+
+    def get_available(self, user):
+        return self\
+            .filter(status="public")\
+            .exclude(student=user)\
+            .exclude(author=user)
+
+    def get_my_dict(self, user):
+        return self.filter(
+            Q(author=user) | (Q(student=user) & Q(status='public'))
+        )
 
 
 class Dictionary(models.Model):
