@@ -188,7 +188,7 @@ class Dictionary_detail(BaseTestSettings):
             res.template_name[0]
         )
         self.assertEqual(
-            'StudentForm',
+            'ChoiceDictionaryForm',
             res.context_data.get('form').__class__.__name__
         )
 
@@ -214,7 +214,7 @@ class Dictionary_detail(BaseTestSettings):
             res.template_name[0]
         )
         self.assertEqual(
-            'StudentForm',
+            'ChoiceDictionaryForm',
             res.context_data.get('form').__class__.__name__
         )
 

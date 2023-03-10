@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.test import Client
 from django.urls import reverse
 
 from dictionary.tests.test_views import BaseTestSettings

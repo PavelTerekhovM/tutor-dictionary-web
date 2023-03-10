@@ -5,8 +5,7 @@ from .models import Dictionary
 
 def author_required(f):
     def wrap(request, *args, **kwargs):
-        pk = kwargs['pk']
-        slug = kwargs['slug']
+        pk = request.POST.get('dictionary_pk')
         author = Dictionary.objects.get(pk=pk).author
         if author != request.user:
             messages.error(
@@ -14,7 +13,7 @@ def author_required(f):
                 'Вы не являетесь автором этого словаря. '
                 'Вы можете скачать фаил и добавить его в свои словари.'
             )
-            return redirect("dictionary_detail", slug, pk)
+            return redirect('dictionary: dictionary_detail', pk)
         return f(request, *args, **kwargs)
     wrap.__doc__ = f.__doc__
     wrap.__name__ = f.__name__

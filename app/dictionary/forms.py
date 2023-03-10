@@ -8,7 +8,7 @@ from .helpers import DictionaryFileManager
 from .models import Dictionary
 
 
-class StudentForm(forms.Form):
+class ChoiceDictionaryForm(forms.Form):
     dictionary_pk = forms.ModelChoiceField(
         queryset=Dictionary.objects.all(),
         required=True,

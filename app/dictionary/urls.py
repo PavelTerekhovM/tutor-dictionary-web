@@ -5,8 +5,7 @@ from .views import (
     Dictionary_detail,
     add_dictionary,
     remove_dictionary,
-    make_public,
-    make_private,
+    change_status,
     dictionary_delete,
     dictionary_search
 )
@@ -47,15 +46,11 @@ urlpatterns = [
         name='remove_dictionary'
     ),
     path(
-        'make_public/<slug:slug>/<int:pk>/',
-        make_public,
-        name='make_public'
+        'change_status/',
+        change_status,
+        name='change_status'
     ),
-    path(
-        'make_private/<slug:slug>/<int:pk>/',
-        make_private,
-        name='make_private'
-    ),
+
     path(
         'dictionary_delete/<slug:slug>/<int:pk>/',
         dictionary_delete,

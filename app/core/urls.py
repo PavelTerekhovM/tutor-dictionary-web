@@ -8,7 +8,11 @@ from core.forms import MyPasswordChangeForm, MyAuthenticationForm
 
 urlpatterns = [
     path('register/', SignUpView.as_view(), name='register'),
-    path('login/', LoginView.as_view(form_class=MyAuthenticationForm), name='login'),
+    path(
+        'login/',
+        LoginView.as_view(form_class=MyAuthenticationForm),
+        name='login'
+    ),
     path(
         'password_change/',
         PasswordChangeView.as_view(form_class=MyPasswordChangeForm),

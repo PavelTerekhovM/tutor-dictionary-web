@@ -17,12 +17,13 @@
         <div>
             {% if request.user in dictionary.student.all %}
             <form action="{% url 'dictionary:remove_dictionary' %}" method="post">
-                {{ student_form }}
+                {{ dictionary_form }}
                 {% csrf_token %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Убрать из моих словарей</button>
+            </form>
             {% else %}
-            <form action="{% url 'dictionary:student_add'%}" method="post">
-                {{ student_form }}
+            <form action="{% url 'dictionary:add_dictionary'%}" method="post">
+                {{ dictionary_form }}
                 {% csrf_token %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Добавить в мои словари</button>
             </form>
@@ -30,15 +31,17 @@
         </div>
         {% else %}
         <div>
-            {% if dictionary.status == "private" %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'dictionary:make_public' dictionary.slug dictionary.pk %}"
-                    class="text-decoration-none text-muted">Сделать публичным</a></button>
-            {% else %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
-                    href="{% url 'dictionary:make_private' dictionary.slug dictionary.pk %}"
-                    class="text-decoration-none text-muted">Сделать приватным</a></button>
-            {% endif %}
+            <form id="change_status" action="{% url 'dictionary:change_status' %}" method="post">
+                {{ dictionary_form }}
+                {% csrf_token %}
+                <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">
+                    {% if dictionary.status == "private" %}
+                    Сделать публичным
+                    {% else %}
+                    Сделать приватным
+                    {% endif %}
+                </button>
+            </form>
         </div>
 
         <div>

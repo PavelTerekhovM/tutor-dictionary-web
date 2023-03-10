@@ -10,7 +10,11 @@ from django.views.generic.edit import FormMixin
 from django.db.models import Q
 
 from dictionary.decorators import author_required
-from dictionary.forms import StudentForm, DictionaryForm, SearchForm
+from dictionary.forms import (
+    ChoiceDictionaryForm,
+    DictionaryForm,
+    SearchForm
+)
 from dictionary.models import Dictionary
 
 
@@ -23,7 +27,7 @@ def add_dictionary(request):
     dictionary_pk = request.POST.get('dictionary_pk')
     dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
     user = request.user
-    form = StudentForm(request.POST)
+    form = ChoiceDictionaryForm(request.POST)
     if form.is_valid():
         dictionary.student.add(user)
         messages.success(request, 'Вы успешно добавили словарь')
@@ -41,7 +45,7 @@ def remove_dictionary(request):
     dictionary_pk = request.POST.get('dictionary_pk')
     dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
     user = request.user
-    form = StudentForm(request.POST)
+    form = ChoiceDictionaryForm(request.POST)
     if form.is_valid():
         dictionary.student.remove(user)
         messages.success(request, 'Вы успешно удалили словарь')
@@ -50,40 +54,30 @@ def remove_dictionary(request):
     return redirect('dictionary:dictionary_detail', dictionary_pk)
 
 
+@login_required
+@require_POST
 @author_required
-def make_private(request, pk, **kwargs):
+def change_status(request):
     """
-    Function makes the dictionary private, which means
-    visible and available only its author.
+    Function change status of dictionary
+    - private ones available only its author
+    - public ones available for all
     """
-    dictionary = get_object_or_404(Dictionary, pk=pk)
+    dictionary_pk = request.POST.get('dictionary_pk')
+    dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
     user = request.user
-    try:
-        dictionary.status = 'private'
-        dictionary.save()
-    except:
-        messages.error(request, 'Что-то пошло не так, повторите попытку')
+    form = ChoiceDictionaryForm(request.POST)
+    if form.is_valid():
+        if dictionary.status == 'private':
+            dictionary.status = 'public'
+            dictionary.save()
+        else:
+            dictionary.status = 'private'
+            dictionary.save()
+        messages.success(request, 'Статус словаря успешно изменен')
     else:
-        messages.success(request, 'Вы успешно сделали словарь приватным')
-    return redirect('lesson:lesson', user.pk, pk)
-
-
-@author_required
-def make_public(request, pk, **kwargs):
-    """
-    Function makes the dictionary public,
-    which means visible and available all users.
-    """
-    dictionary = get_object_or_404(Dictionary, pk=pk)
-    user = request.user
-    try:
-        dictionary.status = 'public'
-        dictionary.save()
-    except:
         messages.error(request, 'Что-то пошло не так, повторите попытку')
-    else:
-        messages.success(request, 'Вы успешно сделали словарь общидоступным')
-    return redirect('lesson:lesson', user.pk, pk)
+    return redirect('lesson:lesson', user.pk, dictionary_pk)
 
 
 @author_required
@@ -131,14 +125,14 @@ class Dictionary_detail(FormMixin, DetailView):
     Class view to render detail view of dictionary
     AddStudentForm to add the dictionary for studing
     """
-    form_class = StudentForm
+    form_class = ChoiceDictionaryForm
     template_name = "dictionary/detail.html"
     context_object_name = 'dictionary'
     queryset = Dictionary.detail_objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['student_form'] = StudentForm(
+        context['student_form'] = ChoiceDictionaryForm(
             initial={'dictionary_pk': self.object.pk}
         )
         return context

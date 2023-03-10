@@ -1,5 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm, AuthenticationForm
+from django.contrib.auth.forms import (
+    UserCreationForm,
+    PasswordChangeForm,
+    AuthenticationForm
+)
 from django.core.exceptions import ValidationError
 
 
@@ -58,7 +62,6 @@ class MyAuthenticationForm(AuthenticationForm):
             self.fields[field].widget.attrs = {'class': 'form-control'}
         self.fields['username'].label = 'Имя пользователя'
         self.fields['password'].label = 'Пароль'
-
 
 
 class MyPasswordChangeForm(PasswordChangeForm):
