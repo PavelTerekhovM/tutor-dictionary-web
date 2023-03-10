@@ -1,24 +1,16 @@
 import os
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 
+from core.tests.base_settings import BaseTestSettings
 from dictionary.helpers import DictionaryFileManager
 from dictionary.models import Dictionary
-from dictionary.tests.test_views import BaseTestSettings
 
 
 class TestDictionary(BaseTestSettings):
     """
     Testcase for testing views of dictionary-app
     """
-    def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
 
     def test_DictionaryFileManager_clean_valid_xml(self):
         """
@@ -27,7 +19,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file.xml'
+            'core/tests/sample_file/valid_dict_file.xml'
         )
         with open(sample_file, 'rb') as file:
             instance = DictionaryFileManager(file)
@@ -42,7 +34,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/invalid_extension.jpg'
+            'core/tests/sample_file/invalid_extension.jpg'
         )
         with open(sample_file, 'rb') as file:
             instance = DictionaryFileManager(file)
@@ -56,7 +48,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/invalid_file.xml'
+            'core/tests/sample_file/invalid_file.xml'
         )
         with open(sample_file, 'rb') as file:
             instance = DictionaryFileManager(file)
@@ -71,7 +63,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file_without_name.xml'
+            'core/tests/sample_file/valid_dict_file_without_name.xml'
         )
 
         obj = Dictionary.objects.create(author=self.user)
@@ -93,7 +85,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/csv_file.csv'
+            'core/tests/sample_file/csv_file.csv'
         )
 
         obj = Dictionary.objects.create(author=self.user)
@@ -110,7 +102,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file.xml'
+            'core/tests/sample_file/valid_dict_file.xml'
         )
         obj = Dictionary.objects.create(author=self.user)
         with open(sample_file, 'rb') as file:
@@ -130,7 +122,7 @@ class TestDictionary(BaseTestSettings):
 
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file_without_name.xml'
+            'core/tests/sample_file/valid_dict_file_without_name.xml'
         )
         obj = Dictionary.objects.create(author=self.user)
         with open(sample_file, 'rb') as file:

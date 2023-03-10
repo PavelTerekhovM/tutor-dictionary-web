@@ -3,7 +3,7 @@ from .views import (
     Dictionary_list,
     My_dictionary_list,
     Dictionary_detail,
-    student_add,
+    add_student,
     student_remove,
     make_public,
     make_private,
@@ -38,7 +38,7 @@ urlpatterns = [
     ),
     path(
         'add/',
-        student_add,
+        add_student,
         name='student_add'
     ),
     path(

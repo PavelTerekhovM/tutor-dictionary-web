@@ -26,6 +26,9 @@
             </form>
         {% else %}
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
+                        href="{% url 'dictionary:student_remove' dictionary.slug dictionary.pk %}"
+                        class="text-decoration-none text-muted">Убрать из моих словарей</a></button>
+            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
                     href="{% url 'lesson:lesson' user.pk dictionary.pk %}"
                     class="text-decoration-none text-muted">Изучать</a></button>
         {% endif %}

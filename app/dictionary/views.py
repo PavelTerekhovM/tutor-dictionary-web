@@ -16,7 +16,7 @@ from dictionary.models import Dictionary
 
 @login_required
 @require_POST
-def student_add(request):
+def add_student(request):
     """
     Function adds a current user to the list of
     student and redirect to lesson detail.
@@ -30,7 +30,7 @@ def student_add(request):
         messages.success(request, 'Вы успешно добавили словарь')
     else:
         messages.error(request, 'Что-то пошло не так, повторите попытку')
-    return redirect('lesson:lesson', user.pk, dictionary_pk)
+    return redirect('dictionary:dictionary_detail', dictionary_pk)
 
 
 @login_required

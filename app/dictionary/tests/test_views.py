@@ -1,56 +1,17 @@
 import os
-import shutil
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
-
-from django.test import TestCase
-from django.test import Client
 
 from django.urls import reverse
 
+from core.tests.base_settings import BaseTestSettings
 from dictionary.models import Dictionary, Word
-
-
-class BaseTestSettings(TestCase):
-    """
-    Base settings for all view tests
-    """
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        settings.MEDIA_ROOT = os.path.join(
-            settings.BASE_DIR,
-            'dictionary/tests/tmp_media'
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
 class AddDictionaryView(BaseTestSettings):
     """
     Testcase for testing views of dictionary-app
     """
-    def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
 
     def test_AddDictionaryView_unauth(self):
         """
@@ -89,7 +50,7 @@ class AddDictionaryView(BaseTestSettings):
         # provided file saved in db
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file.xml'
+            'core/tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -132,7 +93,7 @@ class AddDictionaryView(BaseTestSettings):
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/dict_file_with_invalid_structure.xml'
+            'core/tests/sample_file/dict_file_with_invalid_structure.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -163,7 +124,7 @@ class AddDictionaryView(BaseTestSettings):
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/csv_file.csv'
+            'core/tests/sample_file/csv_file.csv'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -190,24 +151,8 @@ class Dictionary_detail(BaseTestSettings):
     """
     Testcase for testing rendering Dictionary_detail view
     """
+
     def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
-
         new_word = {'body': 'test_word', 'translations': 'слово'}
         self.new_word = Word.objects.create(**new_word)
 
@@ -270,6 +215,3 @@ class Dictionary_detail(BaseTestSettings):
             'AddStudentForm',
             res.context_data.get('form').__class__.__name__
         )
-
-
-
