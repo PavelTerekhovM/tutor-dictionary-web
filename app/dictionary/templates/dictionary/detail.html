@@ -28,7 +28,8 @@
             <form action="{% url 'dictionary:remove_dictionary' %}" method="post">
                 {{ student_form }}
                 {% csrf_token %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit">Убрать из моих словарей</button>
+            <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Убрать из моих
+                словарей</button>
 
             <button class="py-1 my-1 btn btn-outline-dark rounded-0 w-100" type="submit"><a
                     href="{% url 'lesson:lesson' user.pk dictionary.pk %}"

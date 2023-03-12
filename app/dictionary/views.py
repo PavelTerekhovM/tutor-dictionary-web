@@ -50,7 +50,7 @@ def remove_dictionary(request):
     form = ChoiceDictionaryForm(request.POST)
     if form.is_valid():
         dictionary.student.remove(user)
-        messages.success(request, 'Вы успешно удалили словарь')
+        messages.success(request, 'Словарь удален из ваших словарей')
     else:
         messages.error(request, 'Что-то пошло не так, повторите попытку')
     return redirect('dictionary:dictionary_detail', dictionary_pk)
@@ -91,20 +91,23 @@ def change_status(request):
     )
 
 
+@login_required
+@require_POST
 @author_required
-def dictionary_delete(request, pk, **kwargs):
+def delete_dictionary(request):
     """
     Function deletes the dictionary and redirect
     user to the list of dictionaries
     """
-    dictionary = get_object_or_404(Dictionary, pk=pk)
-    try:
+    dictionary_pk = request.POST.get('dictionary_pk')
+    dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
+    form = ChoiceDictionaryForm(request.POST)
+    if form.is_valid():
         dictionary.delete()
-    except:
-        messages.error(request, 'Что-то пошло не так, повторите попытку')
-    else:
         messages.success(request, 'Вы успешно удалили словарь')
-    return redirect('my_dictionaries')
+    else:
+        messages.error(request, 'Что-то пошло не так, повторите попытку')
+    return redirect('dictionary:my_dictionaries')
 
 
 class Dictionary_list(ListView):
@@ -178,7 +181,7 @@ class AddDictionaryView(LoginRequiredMixin, CreateView):
                 self.request,
                 'Что-то пошло не так, повторите попытку'
             )
-            return redirect('upload_file')
+            return redirect('dictionary:upload_file')
         return HttpResponseRedirect(self.get_success_url())
 
 

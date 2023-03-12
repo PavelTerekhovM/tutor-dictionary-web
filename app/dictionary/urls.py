@@ -6,7 +6,7 @@ from .views import (
     add_dictionary,
     remove_dictionary,
     change_status,
-    dictionary_delete,
+    delete_dictionary,
     dictionary_search
 )
 from .views import AddDictionaryView
@@ -52,9 +52,9 @@ urlpatterns = [
     ),
 
     path(
-        'dictionary_delete/<slug:slug>/<int:pk>/',
-        dictionary_delete,
-        name='dictionary_delete'
+        'delete_dictionary/',
+        delete_dictionary,
+        name='delete_dictionary'
     ),
     path(
         'search/',

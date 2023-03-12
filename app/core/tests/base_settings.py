@@ -54,3 +54,15 @@ class BaseTestSettings(TestCase):
         }
         self.new_dict = Dictionary.objects.create(**new_dict)
         self.new_dict.word.add(self.new_word)
+
+    def create_additional_user(self):
+        new_auth_user = {
+            'username': 'test_user_3',
+            'email': 'user_3@example.com',
+            'password': 'testpass123',
+        }
+        self.new_auth_user = get_user_model().objects.create_user(
+            **new_auth_user
+        )
+        self.client_new_auth_user = Client()
+        self.client_new_auth_user.force_login(self.new_auth_user)

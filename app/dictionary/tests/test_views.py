@@ -1,10 +1,8 @@
 import os
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 
 from django.urls import reverse
-from django.test import Client
 
 from core.tests.base_settings import BaseTestSettings
 from dictionary.models import Dictionary, Word
@@ -155,20 +153,12 @@ class Dictionary_detail(BaseTestSettings):
     """
 
     def setUp(self):
-        new_word = {'body': 'test_word', 'translations': 'слово'}
-        self.new_word = Word.objects.create(**new_word)
-
-        new_dict = {
-            'title': 'test_dict',
-            'status': 'public',
-            'author': self.user_auth
-        }
-        self.new_dict = Dictionary.objects.create(**new_dict)
-        self.new_dict.word.add(self.new_word)
+        self.create_dictionary()
 
     def test_Dictionary_detail_unauth(self):
         """
         Testing rendering dictionaries for unauthenticated users
+        - create a dictionary with self.user_auth author (setUp)
         """
         url = reverse(
             'dictionary:dictionary_detail',
@@ -225,25 +215,14 @@ class AddRemoveDictionary(BaseTestSettings):
     """
 
     def setUp(self):
-
         self.create_dictionary()
-
-        new_auth_user = {
-            'username': 'test_user_3',
-            'email': 'user_3@example.com',
-            'password': 'testpass123',
-        }
-        self.new_auth_user = get_user_model().objects.create_user(
-            **new_auth_user
-        )
-        self.client_new_auth_user = Client()
-        self.client_new_auth_user.force_login(self.new_auth_user)
+        self.create_additional_user()
 
     def test_add_dictionary(self):
         """
         Testing add view to test:
-        - create a dictionary with self.user_auth author
-        - create a second auth user
+        - create a dictionary with self.user_auth author (setUp)
+        - create a second auth user (setUp)
         - send a POST request to add new user to this dictionary
         """
         url = reverse(
@@ -421,3 +400,90 @@ class ChangeStatus(BaseTestSettings):
             Dictionary.objects.latest('created').status
         )
 
+
+class DeleteDictionary(BaseTestSettings):
+    """
+    Testcase for testing delete_dictionary views
+    """
+
+    def setUp(self):
+        self.create_dictionary()
+        self.create_additional_user()
+
+    def test_negative(self):
+        """
+        Testing negative scenarios of deleting dictionary:
+        - create a dictionary with self.user_auth author (setUp)
+        - GET request from auth/unauth user
+        - POST request from unauth user
+        - creating one more auth_user (setUp)
+        - POST request from not an author
+        """
+        url = reverse(
+            'dictionary:delete_dictionary'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+        # GET request from auth and unauth user
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        # POST request from unauth user
+        res = self.client.post(
+            url,
+            payload,
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # POST request from not an author
+        res = self.client_new_auth_user.post(
+            url,
+            payload,
+        )
+        url_redirect = reverse(
+            'lesson:lesson',
+            kwargs={
+                'user_pk': self.new_auth_user.pk,
+                'dictionary_pk': Dictionary.objects.latest('created').pk,
+            }
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+
+    def test_positive(self):
+        """
+        Testing successful deleting dictionary:
+        - create a dictionary with self.user_auth author (setUp)
+        - POST request from author
+        """
+        url = reverse(
+            'dictionary:delete_dictionary'
+        )
+        url_redirect = reverse('dictionary:my_dictionaries')
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+        res = self.client_auth.post(
+            url,
+            payload,
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+        self.assertEqual(
+            0, len(Dictionary.objects.all())
+        )
