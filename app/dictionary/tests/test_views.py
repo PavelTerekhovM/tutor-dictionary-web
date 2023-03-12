@@ -225,16 +225,8 @@ class AddRemoveDictionary(BaseTestSettings):
     """
 
     def setUp(self):
-        new_word = {'body': 'test_word', 'translations': 'слово'}
-        self.new_word = Word.objects.create(**new_word)
 
-        new_dict = {
-            'title': 'test_dict',
-            'status': 'public',
-            'author': self.user_auth
-        }
-        self.new_dict = Dictionary.objects.create(**new_dict)
-        self.new_dict.word.add(self.new_word)
+        self.create_dictionary()
 
         new_auth_user = {
             'username': 'test_user_3',
@@ -294,7 +286,7 @@ class AddRemoveDictionary(BaseTestSettings):
     def test_remove_dictionary(self):
         """
         Testing remove view to test:
-        - create a dictionary with self.user_auth author
+        - create a dictionary with self.user_auth author in (setUp)
         - create a second auth user
         - add second user to students
         - send a POST request to add new user to this dictionary
@@ -335,3 +327,97 @@ class AddRemoveDictionary(BaseTestSettings):
         self.assertEqual(
             0, len(Dictionary.objects.latest('created').student.all())
         )
+
+
+class ChangeStatus(BaseTestSettings):
+    """
+    Testcase for testing change_status views
+    """
+
+    def setUp(self):
+        self.create_dictionary()
+
+    def test_negative(self):
+        """
+        Testing negative scenarios of changing status:
+        - create a dictionary with self.user_auth author (setUp)
+        - sync GET request from auth user
+        - sync POST request from unauth user
+        - sync POST request from auth user
+        - async GET request from auth user
+        """
+        url = reverse(
+            'dictionary:change_status'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+        # sync GET request from auth and unauth user
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        # sync POST request from auth user
+        res = self.client_auth.post(
+            url,
+            payload,
+        )
+        self.assertEqual(400, res.status_code)
+
+        # sync POST request from unauth user
+        res = self.client.post(
+            url,
+            payload,
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # async GET request from auth and unauth user return 405 status
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        res = self.client_auth.get(
+            url,
+            payload,
+            **header,
+        )
+        self.assertEqual(405, res.status_code)
+
+        res = self.client.get(
+            url,
+            payload,
+            **header,
+        )
+        self.assertEqual(302, res.status_code)
+
+    def test_positive(self):
+        """
+        Testing positive result of changing status:
+        - check status code 200;
+        - check returned context;
+        - check changing status in db;
+        """
+        url = reverse(
+            'dictionary:change_status'
+        )
+        status = Dictionary.objects.latest('created').status
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        res = self.client_auth.post(
+            url,
+            payload,
+            **header,
+        )
+        self.assertEqual(200, res.status_code)
+        self.assertIn("dictionary_status", res.content.decode())
+        self.assertEqual(
+            'private' if status == 'public' else 'public',
+            Dictionary.objects.latest('created').status
+        )
+

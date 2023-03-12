@@ -1,7 +1,9 @@
+import json
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
@@ -9,7 +11,7 @@ from django.views.generic import ListView, DetailView, CreateView
 from django.views.generic.edit import FormMixin
 from django.db.models import Q
 
-from dictionary.decorators import author_required
+from dictionary.decorators import author_required, ajax_required
 from dictionary.forms import (
     ChoiceDictionaryForm,
     DictionaryForm,
@@ -56,6 +58,7 @@ def remove_dictionary(request):
 
 @login_required
 @require_POST
+@ajax_required
 @author_required
 def change_status(request):
     """
@@ -65,8 +68,8 @@ def change_status(request):
     """
     dictionary_pk = request.POST.get('dictionary_pk')
     dictionary = get_object_or_404(Dictionary, pk=dictionary_pk)
-    user = request.user
     form = ChoiceDictionaryForm(request.POST)
+    response_data = {}
     if form.is_valid():
         if dictionary.status == 'private':
             dictionary.status = 'public'
@@ -74,10 +77,18 @@ def change_status(request):
         else:
             dictionary.status = 'private'
             dictionary.save()
-        messages.success(request, 'Статус словаря успешно изменен')
+        response_data['action_status'] = 'success'
+        response_data['msg'] = 'Статус словаря успешно изменен'
     else:
-        messages.error(request, 'Что-то пошло не так, повторите попытку')
-    return redirect('lesson:lesson', user.pk, dictionary_pk)
+        response_data['action_status'] = 'danger'
+        response_data['msg'] = 'Что-то пошло не так, повторите попытку'
+
+    response_data['dictionary_status'] = dictionary.status
+
+    return HttpResponse(
+        json.dumps(response_data),
+        content_type="application/json",
+    )
 
 
 @author_required

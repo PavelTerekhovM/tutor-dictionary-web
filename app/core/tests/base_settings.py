@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.test import Client
 
+from dictionary.models import Word, Dictionary
+
 
 class BaseTestSettings(TestCase):
     """
@@ -40,3 +42,15 @@ class BaseTestSettings(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+
+    def create_dictionary(self):
+        new_word = {'body': 'test_word', 'translations': 'слово'}
+        self.new_word = Word.objects.create(**new_word)
+
+        new_dict = {
+            'title': 'test_dict',
+            'status': 'public',
+            'author': self.user_auth
+        }
+        self.new_dict = Dictionary.objects.create(**new_dict)
+        self.new_dict.word.add(self.new_word)

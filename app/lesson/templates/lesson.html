@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Урок {{ dictionary.title }}{% endblock %}
 
 {% block content %}
@@ -6,7 +7,13 @@
     <div class="w-75">
         <h5 class="text mt-3 mb-2">{{ dictionary.title }}</h5>
         <p class="mb-1">Создан {{ dictionary.created }}</p>
-        <span class="badge bg-secondary mt-1">{% if dictionary.status == "private" %}Private{% else %}Public{% endif %}</span>
+        <span class="change_status_bg badge bg-secondary mt-1">
+            {% if dictionary.status == "private" %}
+            Private
+            {% else %}
+            Public
+            {% endif %}
+        </span>
         <span class="badge bg-secondary">Создан {{ dictionary.author }}</span>
         <span class="badge bg-secondary"> {{ dictionary.word.count }} слов</span>
         <span class="badge bg-secondary"> {{ dictionary.note|truncatewords:5 }}</span>
@@ -34,7 +41,7 @@
             <form id="change_status" action="{% url 'dictionary:change_status' %}" method="post">
                 {{ dictionary_form }}
                 {% csrf_token %}
-                <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">
+                <button class="change_status_btn py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">
                     {% if dictionary.status == "private" %}
                     Сделать публичным
                     {% else %}
@@ -122,5 +129,9 @@
     <button class="py-1 mt-1 mb-2 btn btn-outline-dark rounded-0" type="submit"><a href="{{ dictionary.file.url }}" class="text-decoration-none text-muted" download>Скачать фаил</a></button>
     {% endif %}
 </div>
+{% endblock %}
 
+
+{% block script %}
+    <script src='{% static "lesson/js/change_status.js" %}'></script>
 {% endblock %}
