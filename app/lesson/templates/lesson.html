@@ -118,10 +118,12 @@
             <td class="align-middle">{{ card.word.example }}</td>
             <td class="align-middle">{{ card.correct_answers }}/{{ card.lesson.required_answers }}</td>
             <td class="align-middle fw-bold">
-                <form action="{% url 'lesson:change_card_status' %}" method="post">
-                    {% csrf_token %}
-                    {{ card.form_card.as_p }}
-                </form>
+                <div id="form_card_{{ forloop.counter }}">
+                    <form class="change_card_status" action="{% url 'lesson:change_card_status' %}" method="post">
+                        {% csrf_token %}
+                        {{ card.form_card.as_p }}
+                    </form>
+                </div>
             </td>
         </tr>
         </thead>
@@ -138,5 +140,5 @@
 
 
 {% block script %}
-    <script src='{% static "lesson/js/change_status.js" %}'></script>
+    <script src='{% static "lesson/js/lesson.js" %}'></script>
 {% endblock %}

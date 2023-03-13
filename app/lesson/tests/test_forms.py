@@ -74,7 +74,7 @@ class TestChangeNumberAnswersForm(BaseTestSettings):
                 'lesson_pk': tested_lesson.pk
             }
         )
-        self.assertEqual(404, res.status_code)
+        self.assertEqual(400, res.status_code)
 
         res = self.client_auth.post(
             url,
@@ -82,7 +82,9 @@ class TestChangeNumberAnswersForm(BaseTestSettings):
                 'required_answers': 2,
             }
         )
-        self.assertEqual(404, res.status_code)
+        self.assertEqual(400, res.status_code)
+        self.assertEqual('application/json', res.headers.get('Content-Type'))
+        self.assertIn('action_status', res.content.decode())
 
 
 class TestChangeCardStatus(BaseTestSettings):

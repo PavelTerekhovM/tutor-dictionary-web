@@ -2,11 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 
-from django.http import HttpResponseNotFound
+from django.http import JsonResponse
 
 from django.shortcuts import render, get_object_or_404, redirect
 
-from django.urls import reverse_lazy
 
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView
@@ -163,36 +162,31 @@ class ChangeNumberAnswers(LoginRequiredMixin, FormView):
     The view process the form of changing required
     number of answers in the lesson and redirect back.
     """
-    current_lesson = None
     form_class = ChangeNumberAnswersForm
+    http_method_names = ['post', ]
 
     def form_valid(self, form):
         lesson_pk = self.request.POST.get('lesson_pk')
-        self.current_lesson = get_object_or_404(
+        current_lesson = get_object_or_404(
             Lesson,
             pk=lesson_pk
         )
         cd = form.cleaned_data
-        self.current_lesson.required_answers = cd['required_answers']
-        self.current_lesson.save()
-        messages.success(self.request, 'Изменения внесены')
-        return super().form_valid(form)
+        current_lesson.required_answers = cd['required_answers']
+        current_lesson.save()
+        response_data = {
+            'action_status': 'success',
+            'msg': 'Изменения успешно внесены'
+        }
+        return JsonResponse(response_data)
 
     def form_invalid(self, form):
-        messages.error(self.request, 'Что-то пошло не так, повторите попытку')
-        return HttpResponseNotFound('<h1>Page not found</h1>')
-
-    def get_success_url(self):
-        return reverse_lazy(
-            "lesson:lesson",
-            kwargs={
-                'user_pk': self.request.user.pk,
-                'dictionary_pk': self.current_lesson.dictionary.pk
-            }
-        )
-
-    def get(self, request, *args, **kwargs):
-        return HttpResponseNotFound('<h1>Page not found</h1>')
+        response_data = {
+            'action_status': 'danger',
+            'msg': 'Что-то пошло не так, повторите попытку',
+            'form_error': form.errors
+        }
+        return JsonResponse(response_data, status=400)
 
 
 @available_for_learning

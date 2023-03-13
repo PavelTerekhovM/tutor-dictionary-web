@@ -64,8 +64,8 @@ class TestChangeNumberAnswers(BaseTestSettings):
         )
 
         res = self.client_auth.get(url)
-        self.assertEqual(404, res.status_code)
-        self.assertEqual('<h1>Page not found</h1>', res.content.decode())
+        # as GET not allowed should return 405
+        self.assertEqual(405, res.status_code)
 
     def test_post_authenticated(self):
         """
@@ -100,8 +100,9 @@ class TestChangeNumberAnswers(BaseTestSettings):
             }
         )
 
-        self.assertEqual(302, res.status_code)
-        self.assertEqual(returned_url, res.url)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual('application/json', res.headers.get('Content-Type'))
+        self.assertIn('action_status', res.content.decode())
 
         # check if there is still one lesson and number answers changed to 2
         tested_lesson.refresh_from_db()
