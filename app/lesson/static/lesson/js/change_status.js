@@ -1,10 +1,4 @@
-$(document).ready(function() {
-    $('#change_status').on('submit', function(event){
-       event.preventDefault();
-       change_status();
-    });
-
-    function show_error() {
+function show_error() {
         const div_alert = document.querySelector('.alert');
         const error_div = document.createElement("div");
         error_div.classList.add(`alert-${action_status}`, 'my-3', 'alert');
@@ -17,6 +11,12 @@ $(document).ready(function() {
             error_div.remove()
         }, 2000)
     }
+
+$(document).ready(function() {
+    $('#change_status').on('submit', function(event){
+       event.preventDefault();
+       change_status();
+    });
 
     function change_status() {
         $.ajax({
@@ -55,3 +55,4 @@ $(document).ready(function() {
         });
     };
 });
+

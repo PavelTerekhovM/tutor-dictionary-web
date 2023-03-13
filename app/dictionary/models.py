@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -12,12 +13,21 @@ class DetailManager(models.Manager):
             .prefetch_related('word')
 
     def get_available(self, user):
-        return self\
-            .filter(status="public")\
-            .exclude(student=user)\
-            .exclude(author=user)
+        """
+        Getting queryset of all public dictionaries
+        where user is not author or student
+        For anonymous user return all public dictionaries
+        """
+        qs = self.get_queryset().filter(status="public")
+        if not isinstance(user, AnonymousUser):
+            qs = qs.exclude(student=user).exclude(author=user)
+        return qs
 
     def get_my_dict(self, user):
+        """
+        Getting queryset of all dictionaries
+        where user is author or student
+        """
         return self.filter(
             Q(author=user) | (Q(student=user) & Q(status='public'))
         )

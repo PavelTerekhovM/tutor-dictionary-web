@@ -69,7 +69,7 @@
         <p class="mb-2">Необходимое количество верных ответов:</p>
     </div>
     <div class="ms-2">
-        <form class="d-flex" action="{% url 'lesson:change_number_answers' %}" method="post">
+        <form id="change_number_answers" action="{% url 'lesson:change_number_answers' %}" method="post">
             {{ form_answers }}
             {% csrf_token %}
         </form>
