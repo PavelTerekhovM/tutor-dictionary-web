@@ -37,3 +37,15 @@
 <span class="spinner-border loading" role="status" style="display: none;"></span>
 <!--end infinite scroll-->
 {% endblock %}
+
+{% block domready %}
+   var infinite = new Waypoint.Infinite({
+   element: $('.infinite-container')[0],
+   onBeforePageLoad: function () {
+      $('.loading').show();
+   },
+   onAfterPageLoad: function ($items) {
+      $('.loading').hide();
+   }
+});
+{% endblock %}

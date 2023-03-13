@@ -1,6 +1,36 @@
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
+
+
+class DetailManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset()\
+            .select_related('author')\
+            .prefetch_related('student')\
+            .prefetch_related('word')
+
+    def get_available(self, user):
+        """
+        Getting queryset of all public dictionaries
+        where user is not author or student
+        For anonymous user return all public dictionaries
+        """
+        qs = self.get_queryset().filter(status="public")
+        if not isinstance(user, AnonymousUser):
+            qs = qs.exclude(student=user).exclude(author=user)
+        return qs
+
+    def get_my_dict(self, user):
+        """
+        Getting queryset of all dictionaries
+        where user is author or student
+        """
+        return self.filter(
+            Q(author=user) | (Q(student=user) & Q(status='public'))
+        )
 
 
 class Dictionary(models.Model):
@@ -26,6 +56,9 @@ class Dictionary(models.Model):
         related_name='creator_of_dictionary'
     )
 
+    objects = models.Manager()
+    detail_objects = DetailManager()
+
     class Meta:
         ordering = ('title',)
         verbose_name = 'Словарь'
@@ -37,7 +70,7 @@ class Dictionary(models.Model):
     def get_absolute_url(self):
         return reverse(
             'dictionary:dictionary_detail',
-            kwargs={'slug': self.slug, 'pk': self.pk}
+            kwargs={'pk': self.pk}
         )
 
 

@@ -1,5 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import (
+    UserCreationForm,
+    PasswordChangeForm,
+    AuthenticationForm
+)
 from django.core.exceptions import ValidationError
 
 
@@ -49,6 +53,15 @@ class UserRegistrationForm(UserCreationForm):
                 "Пользователь с такой почтой уже зарегистрирован"
             )
         return self.cleaned_data
+
+
+class MyAuthenticationForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in ('username', 'password'):
+            self.fields[field].widget.attrs = {'class': 'form-control'}
+        self.fields['username'].label = 'Имя пользователя'
+        self.fields['password'].label = 'Пароль'
 
 
 class MyPasswordChangeForm(PasswordChangeForm):

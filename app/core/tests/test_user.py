@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.test import Client
 from django.urls import reverse
 
 from dictionary.tests.test_views import BaseTestSettings
@@ -9,24 +8,6 @@ class TestView(BaseTestSettings):
     """
     Testcase for core.User
     """
-    def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
-
     def test_SignUpView(self):
         """
         Testing SignUpView view
@@ -69,24 +50,6 @@ class TestForm(BaseTestSettings):
     """
     Testcase for core.User
     """
-    def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
-
     def test_UserRegistrationForm(self):
         """
         Testing UserRegistrationForm

@@ -5,7 +5,6 @@
 {% block content %}
     <div class="infinite-container">
     {% for dictionary in dictionaries %}
-    {% if request.user not in dictionary.student.all %}
     <div class="card my-3 infinite-item"><a href="{{ dictionary.get_absolute_url }}" class="text-decoration-none text-reset">
         <div class="card-header py-3">
             <h5 class="text">{{ dictionary.title }}</h5>
@@ -29,7 +28,6 @@
     </a>
     </div>
 </div>
-{% endif %}
 {% endfor %}
 
 <!--infinite scroll-->
@@ -40,4 +38,15 @@
 <!--end infinite scroll-->
 {% endblock %}
 
+{% block domready %}
+   var infinite = new Waypoint.Infinite({
+   element: $('.infinite-container')[0],
+   onBeforePageLoad: function () {
+      $('.loading').show();
+   },
+   onAfterPageLoad: function ($items) {
+      $('.loading').hide();
+   }
+});
+{% endblock %}
 

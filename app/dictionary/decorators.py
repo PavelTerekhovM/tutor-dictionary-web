@@ -1,20 +1,30 @@
 from django.contrib import messages
 from django.shortcuts import redirect
 from .models import Dictionary
+from django.http import HttpResponseBadRequest
+
+
+def ajax_required(f):
+    def wrap(request, *args, **kwargs):
+        if request.META.get('HTTP_X_REQUESTED_WITH') != 'XMLHttpRequest':
+            return HttpResponseBadRequest()
+        return f(request, *args, **kwargs)
+    wrap.__doc__ = f.__doc__
+    wrap.__name__ = f.__name__
+    return wrap
 
 
 def author_required(f):
     def wrap(request, *args, **kwargs):
-        pk = kwargs['pk']
-        slug = kwargs['slug']
-        author = Dictionary.objects.get(pk=pk).author
+        dictionary_pk = request.POST.get('dictionary_pk')
+        author = Dictionary.objects.get(pk=dictionary_pk).author
         if author != request.user:
             messages.error(
                 request,
                 'Вы не являетесь автором этого словаря. '
                 'Вы можете скачать фаил и добавить его в свои словари.'
             )
-            return redirect("dictionary_detail", slug, pk)
+            return redirect('lesson:lesson', request.user.pk, dictionary_pk)
         return f(request, *args, **kwargs)
     wrap.__doc__ = f.__doc__
     wrap.__name__ = f.__name__
@@ -28,16 +38,16 @@ def available_for_learning(f):
     student if dictionary is public
     """
     def wrap(request, *args, **kwargs):
-        pk = kwargs['dictionary_pk']
+        dictionary_pk = kwargs['dictionary_pk']
         if not (
             (
-                request.user == Dictionary.objects.get(pk=pk).author
+                request.user == Dictionary.objects.get(pk=dictionary_pk).author
             ) or (
-                Dictionary.objects.get(pk=pk).status == 'public'
+                Dictionary.objects.get(pk=dictionary_pk).status == 'public'
             )
         ):
             messages.error(request, 'Автор словаря ограничил доступ к нему')
-            return redirect('my_dictionaries')
+            return redirect('dictionary:my_dictionaries')
         return f(request, *args, **kwargs)
     wrap.__doc__ = f.__doc__
     wrap.__name__ = f.__name__

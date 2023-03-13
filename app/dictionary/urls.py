@@ -3,11 +3,10 @@ from .views import (
     Dictionary_list,
     My_dictionary_list,
     Dictionary_detail,
-    student_add,
-    student_remove,
-    make_public,
-    make_private,
-    dictionary_delete,
+    add_dictionary,
+    remove_dictionary,
+    change_status,
+    delete_dictionary,
     dictionary_search
 )
 from .views import AddDictionaryView
@@ -32,34 +31,30 @@ urlpatterns = [
         name='upload_file'
     ),
     path(
-        '<slug:slug>/<int:pk>/',
+        '<int:pk>/',
         Dictionary_detail.as_view(),
-        name="dictionary_detail"
+        name='dictionary_detail'
     ),
     path(
-        'add/<slug:slug>/<int:pk>/',
-        student_add,
-        name='student_add'
+        'add/',
+        add_dictionary,
+        name='add_dictionary'
     ),
     path(
-        'remove/<slug:slug>/<int:pk>/',
-        student_remove,
-        name='student_remove'
+        'remove/',
+        remove_dictionary,
+        name='remove_dictionary'
     ),
     path(
-        'make_public/<slug:slug>/<int:pk>/',
-        make_public,
-        name='make_public'
+        'change_status/',
+        change_status,
+        name='change_status'
     ),
+
     path(
-        'make_private/<slug:slug>/<int:pk>/',
-        make_private,
-        name='make_private'
-    ),
-    path(
-        'dictionary_delete/<slug:slug>/<int:pk>/',
-        dictionary_delete,
-        name='dictionary_delete'
+        'delete_dictionary/',
+        delete_dictionary,
+        name='delete_dictionary'
     ),
     path(
         'search/',

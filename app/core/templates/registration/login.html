@@ -11,17 +11,19 @@
 {% endif %}
 <div class="login-form">
     <form action="{% url 'login' %}" method="post">
-        {% for field in form  %}
-        <div class="py-1">
-            {{ field.label_tag }} {{ field }}
-            {% if field.help_text %}
-            {% endif %}
-        </div>
-        {% endfor %}
-        {% csrf_token %}
-        <div class="d-grid gap-2 d-md-block py-2">
-            <button type="submit" class="btn btn-outline-secondary px-2">Вход</button>
-            <button type="button" class="btn btn-outline-secondary"><a href="{% url 'password_reset' %}" class="text-decoration-none text-muted">Восстановление пароля</a></button>
+        <div class="w-50">
+            {% for field in form  %}
+            <div class="py-1">
+                {{ field.label_tag }} {{ field }}
+                {% if field.help_text %}
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% csrf_token %}
+            <div class="d-grid gap-2 d-md-block py-2">
+                <button type="submit" class="btn btn-outline-secondary px-2">Вход</button>
+                <button type="button" class="btn btn-outline-secondary"><a href="{% url 'password_reset' %}" class="text-decoration-none text-muted">Восстановление пароля</a></button>
+            </div>
         </div>
     </form>
 </div>

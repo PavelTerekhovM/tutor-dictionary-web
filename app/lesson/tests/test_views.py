@@ -1,10 +1,6 @@
 import os
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
-
-from django.test import Client
-
 from django.urls import reverse
 
 from dictionary.models import Dictionary, Word
@@ -17,26 +13,9 @@ class TestChangeNumberAnswers(BaseTestSettings):
     Testcase for testing views of changing number of required answers
     """
     def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
-
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'lesson/tests/sample_file/valid_dict_file.xml'
+            'core/tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -85,8 +64,8 @@ class TestChangeNumberAnswers(BaseTestSettings):
         )
 
         res = self.client_auth.get(url)
-        self.assertEqual(404, res.status_code)
-        self.assertEqual('<h1>Page not found</h1>', res.content.decode())
+        # as GET not allowed should return 405
+        self.assertEqual(405, res.status_code)
 
     def test_post_authenticated(self):
         """
@@ -121,8 +100,9 @@ class TestChangeNumberAnswers(BaseTestSettings):
             }
         )
 
-        self.assertEqual(302, res.status_code)
-        self.assertEqual(returned_url, res.url)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual('application/json', res.headers.get('Content-Type'))
+        self.assertIn('action_status', res.content.decode())
 
         # check if there is still one lesson and number answers changed to 2
         tested_lesson.refresh_from_db()
@@ -135,26 +115,9 @@ class TestChangeCardStatus(BaseTestSettings):
     Testcase for testing views of changing card status
     """
     def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
-
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'lesson/tests/sample_file/valid_dict_file.xml'
+            'core/tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:

@@ -1,56 +1,17 @@
 import os
-import shutil
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
-
-from django.test import TestCase
-from django.test import Client
 
 from django.urls import reverse
 
-from dictionary.models import Dictionary
+from core.tests.base_settings import BaseTestSettings
+from dictionary.models import Dictionary, Word
 
 
-class BaseTestSettings(TestCase):
-    """
-    Base settings for all view tests
-    """
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        settings.MEDIA_ROOT = os.path.join(
-            settings.BASE_DIR,
-            'dictionary/tests/tmp_media'
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
-
-
-class TestDictionary(BaseTestSettings):
+class AddDictionaryView(BaseTestSettings):
     """
     Testcase for testing views of dictionary-app
     """
-    def setUp(self):
-        user = {
-            'username': 'test_user_1',
-            'email': 'user_1@example.com',
-            'password': 'testpass123',
-        }
-        self.user = get_user_model().objects.create_user(**user)
-
-        user_authenticated = {
-            'username': 'test_user_2',
-            'email': 'user_2@example.com',
-            'password': 'testpass456',
-        }
-        self.user_auth = get_user_model()\
-            .objects.create_user(**user_authenticated)
-        self.client_auth = Client()
-        self.client_auth.force_login(self.user_auth)
 
     def test_AddDictionaryView_unauth(self):
         """
@@ -89,7 +50,7 @@ class TestDictionary(BaseTestSettings):
         # provided file saved in db
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/valid_dict_file.xml'
+            'core/tests/sample_file/valid_dict_file.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -132,7 +93,7 @@ class TestDictionary(BaseTestSettings):
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/dict_file_with_invalid_structure.xml'
+            'core/tests/sample_file/dict_file_with_invalid_structure.xml'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -163,7 +124,7 @@ class TestDictionary(BaseTestSettings):
         )
         sample_file = os.path.join(
             settings.BASE_DIR,
-            'dictionary/tests/sample_file/csv_file.csv'
+            'core/tests/sample_file/csv_file.csv'
         )
 
         with open(sample_file, 'rb') as fp:
@@ -183,4 +144,346 @@ class TestDictionary(BaseTestSettings):
         self.assertEqual(
             'Загруженный файл не был распознан',
             res.context.get('form').errors.get('file')[0]
+        )
+
+
+class Dictionary_detail(BaseTestSettings):
+    """
+    Testcase for testing rendering Dictionary_detail view
+    """
+
+    def setUp(self):
+        self.create_dictionary()
+
+    def test_Dictionary_detail_unauth(self):
+        """
+        Testing rendering dictionaries for unauthenticated users
+        - create a dictionary with self.user_auth author (setUp)
+        """
+        url = reverse(
+            'dictionary:dictionary_detail',
+            kwargs={'pk': Dictionary.objects.latest('created').pk}
+        )
+        self.assertEqual(1, len(Dictionary.objects.all()))
+        self.assertEqual(1, len(Word.objects.all()))
+
+        res = self.client.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'ChoiceDictionaryForm',
+            res.context_data.get('form').__class__.__name__
+        )
+
+    def test_Dictionary_detail_auth(self):
+        """
+        Testing rendering dictionaries for authenticated users
+        """
+        url = reverse(
+            'dictionary:dictionary_detail',
+            kwargs={'pk': Dictionary.objects.latest('created').pk}
+        )
+        self.assertEqual(1, len(Dictionary.objects.all()))
+        self.assertEqual(1, len(Word.objects.all()))
+
+        res = self.client_auth.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'dictionary/detail.html',
+            res.template_name[0]
+        )
+        self.assertEqual(
+            'ChoiceDictionaryForm',
+            res.context_data.get('form').__class__.__name__
+        )
+
+
+class AddRemoveDictionary(BaseTestSettings):
+    """
+    Testcase for testing add_dictionary and remove views
+    """
+
+    def setUp(self):
+        self.create_dictionary()
+        self.create_additional_user()
+
+    def test_add_dictionary(self):
+        """
+        Testing add view to test:
+        - create a dictionary with self.user_auth author (setUp)
+        - create a second auth user (setUp)
+        - send a POST request to add new user to this dictionary
+        """
+        url = reverse(
+            'dictionary:add_dictionary'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+
+        self.assertEqual(
+            0, len(Dictionary.objects.latest('created').student.all())
+        )
+        # test that only POST and authorised users allowed
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+        url_redirect = reverse(
+            'lesson:lesson',
+            kwargs={
+                'user_pk': self.new_auth_user.pk,
+                'dictionary_pk': Dictionary.objects.latest('created').pk,
+            }
+        )
+
+        res = self.client_new_auth_user.post(
+            url,
+            payload,
+        )
+        # test that POST was successfully handled
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # test that that number of students changed
+        self.assertEqual(
+            1, len(Dictionary.objects.latest('created').student.all())
+        )
+
+    def test_remove_dictionary(self):
+        """
+        Testing remove view to test:
+        - create a dictionary with self.user_auth author in (setUp)
+        - create a second auth user
+        - add second user to students
+        - send a POST request to add new user to this dictionary
+        """
+        url = reverse(
+            'dictionary:remove_dictionary'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+
+        self.new_dict.student.add(self.new_auth_user)
+        self.assertEqual(
+            1, len(Dictionary.objects.latest('created').student.all())
+        )
+        # test that only POST and authorised users allowed
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        url_redirect = reverse(
+            'dictionary:dictionary_detail',
+            kwargs={
+                'pk': Dictionary.objects.latest('created').pk,
+            }
+        )
+        res = self.client_new_auth_user.post(
+            url,
+            payload,
+        )
+        # test that POST was successfully handled
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # test that that number of students changed
+        self.assertEqual(
+            0, len(Dictionary.objects.latest('created').student.all())
+        )
+
+
+class ChangeStatus(BaseTestSettings):
+    """
+    Testcase for testing change_status views
+    """
+
+    def setUp(self):
+        self.create_dictionary()
+
+    def test_negative(self):
+        """
+        Testing negative scenarios of changing status:
+        - create a dictionary with self.user_auth author (setUp)
+        - sync GET request from auth user
+        - sync POST request from unauth user
+        - sync POST request from auth user
+        - async GET request from auth user
+        """
+        url = reverse(
+            'dictionary:change_status'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+        # sync GET request from auth and unauth user
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        # sync POST request from auth user
+        res = self.client_auth.post(
+            url,
+            payload,
+        )
+        self.assertEqual(400, res.status_code)
+
+        # sync POST request from unauth user
+        res = self.client.post(
+            url,
+            payload,
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # async GET request from auth and unauth user return 405 status
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        res = self.client_auth.get(
+            url,
+            payload,
+            **header,
+        )
+        self.assertEqual(405, res.status_code)
+
+        res = self.client.get(
+            url,
+            payload,
+            **header,
+        )
+        self.assertEqual(302, res.status_code)
+
+    def test_positive(self):
+        """
+        Testing positive result of changing status:
+        - check status code 200;
+        - check returned context;
+        - check changing status in db;
+        """
+        url = reverse(
+            'dictionary:change_status'
+        )
+        status = Dictionary.objects.latest('created').status
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        res = self.client_auth.post(
+            url,
+            payload,
+            **header,
+        )
+        self.assertEqual(200, res.status_code)
+        self.assertIn("dictionary_status", res.content.decode())
+        self.assertEqual(
+            'private' if status == 'public' else 'public',
+            Dictionary.objects.latest('created').status
+        )
+
+
+class DeleteDictionary(BaseTestSettings):
+    """
+    Testcase for testing delete_dictionary views
+    """
+
+    def setUp(self):
+        self.create_dictionary()
+        self.create_additional_user()
+
+    def test_negative(self):
+        """
+        Testing negative scenarios of deleting dictionary:
+        - create a dictionary with self.user_auth author (setUp)
+        - GET request from auth/unauth user
+        - POST request from unauth user
+        - creating one more auth_user (setUp)
+        - POST request from not an author
+        """
+        url = reverse(
+            'dictionary:delete_dictionary'
+        )
+        url_redirect = reverse('login') + '?next=' + url
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+        # GET request from auth and unauth user
+        self.assertEqual(405, self.client_auth.get(url).status_code)
+        self.assertEqual(302, self.client.get(url).status_code)
+        self.assertEqual(url_redirect, self.client.get(url).url)
+
+        # POST request from unauth user
+        res = self.client.post(
+            url,
+            payload,
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # POST request from not an author
+        res = self.client_new_auth_user.post(
+            url,
+            payload,
+        )
+        url_redirect = reverse(
+            'lesson:lesson',
+            kwargs={
+                'user_pk': self.new_auth_user.pk,
+                'dictionary_pk': Dictionary.objects.latest('created').pk,
+            }
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+
+    def test_positive(self):
+        """
+        Testing successful deleting dictionary:
+        - create a dictionary with self.user_auth author (setUp)
+        - POST request from author
+        """
+        url = reverse(
+            'dictionary:delete_dictionary'
+        )
+        url_redirect = reverse('dictionary:my_dictionaries')
+        payload = {
+            'dictionary_pk': Dictionary.objects.latest('created').pk
+        }
+
+        self.assertEqual(
+            1, len(Dictionary.objects.all())
+        )
+        res = self.client_auth.post(
+            url,
+            payload,
+        )
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+        self.assertEqual(
+            0, len(Dictionary.objects.all())
         )
