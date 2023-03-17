@@ -25,8 +25,12 @@ urlpatterns = [
         name='lesson'
     ),
     path(
-        'learn/<int:translation_reverse>/<int:user_pk>/'
-        '<int:dictionary_pk>/<int:card_pk>/',
+        'learn/<int:lesson_pk>/',
+        learn,
+        name='learn'
+    ),
+    path(
+        'learn/<str:reverse>/<int:lesson_pk>/',
         learn,
         name='learn'
     ),

@@ -49,26 +49,41 @@ class Lesson(models.Model):
         for word in self.dictionary.word.all():
             Card.objects.get_or_create(word=word, lesson=self)
 
-    def get_random(self, card=None, visited=None):
+    def get_active_cards(self):
         """
-        The function handle chosing first and all next random
-        cards in lesson
-        :arg visited - pasing from view list of cards' ids
-        visited within lesson
+        The function ruturns QuerySet of all active cards
         """
-        if not card:
-            cards = Card.objects.filter(lesson=self).filter(status='active')
+        qs = Card.objects.filter(lesson=self)\
+            .filter(status='active')\
+            .select_related('word')
+        return qs
+
+    def get_random(self, visited=None):
+        """
+        The function returns random not visited card
+        """
+        if not visited:
+            visited = []
         else:
-            card = Card.objects.get(pk=card.pk)
-            # take card from lesson with answers less than current card
-            cards = Card.objects.filter(lesson=self).\
-                filter(status='active').\
-                exclude(id__in=visited)
-        if cards:
-            next_card = random.choice(cards)
+            visited = visited[:]
+        cards = self.get_active_cards().exclude(id__in=visited)
+        if len(cards) > 1:
+            return random.choice(cards), True
+        elif len(cards) > 0:
+            return random.choice(cards), False
+        return None, False
+
+    def get_next(self, card, visited=None):
+        """
+        The function returns True if there is unvisited cards or False
+        """
+        if not visited:
+            visited = []
         else:
-            next_card = None
-        return next_card
+            visited = visited[:]
+        visited.append(card.pk)
+        qs = self.get_active_cards().exclude(id__in=visited).count()
+        return qs != 0
 
 
 class Card(models.Model):
@@ -105,10 +120,9 @@ class Card(models.Model):
 
     def change_status(self, new_status):
         """
-        method to change card status and required number of answers
-        if active -> done it makes number of answers
-        equal the value required in lesson
-        if done -> active it sets zero number of answers
+        Method to change card status and required number of answers:
+        - 'active' -> 'done': change number of answers to required in lesson
+        - 'done' -> 'active': change to zero
         """
         if new_status == 'done':
             self.correct_answers = self.lesson.required_answers
@@ -116,3 +130,29 @@ class Card(models.Model):
             self.correct_answers = 0
         self.status = new_status
         self.save()
+
+    def check_card(self, answer, reverse):
+        """
+        Method checks answers, changes stats appropriately:
+        """
+        self.all_attempts += 1
+        if reverse == 'reverse':
+            question = self.word.translations.lower()
+        else:
+            question = self.word.body.lower()
+        chars = (",", ";", "...", "|", "\n", "\t", "n‘", "n’",
+                 'n"', "n'", "‘", "’", '"', '  ', '   ', "'")
+        for char in chars:
+            answer = answer.replace(char, " ")
+            question = question.replace(char, " ")
+        if len(answer) != 0 and answer in question:
+            self.correct_answers += 1
+            self.all_correct_answers += 1
+            if self.correct_answers == self.lesson.required_answers:
+                self.status = 'done'
+            self.save()
+            status, msg = 'success', 'Это верный ответ'
+        else:
+            status, msg = 'error', 'Это неверный ответ'
+        self.save()
+        return status, msg

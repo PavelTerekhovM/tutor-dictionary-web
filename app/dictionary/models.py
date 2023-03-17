@@ -14,8 +14,8 @@ class DetailManager(models.Manager):
 
     def get_available(self, user):
         """
-        Getting queryset of all public dictionaries
-        where user is not author or student
+        Getting queryset of all public dictionaries where user is not
+        author or student;
         For anonymous user return all public dictionaries
         """
         qs = self.get_queryset().filter(status="public")

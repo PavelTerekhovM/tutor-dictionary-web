@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import redirect
+
+from lesson.models import Lesson
 from .models import Dictionary
 from django.http import HttpResponseBadRequest
 
@@ -33,17 +35,24 @@ def author_required(f):
 
 def available_for_learning(f):
     """
-    decorators allow to render dictionary in
-    lesson and learning only for author and
-    student if dictionary is public
+    Decorator checks if dictionary is public or user is its author
     """
     def wrap(request, *args, **kwargs):
-        dictionary_pk = kwargs['dictionary_pk']
+        dictionary_pk = kwargs.get('dictionary_pk')
+        lesson_pk = kwargs.get('lesson_pk')
+        if dictionary_pk:
+            dictionary = Dictionary.objects\
+                .select_related('author')\
+                .get(pk=dictionary_pk)
+        else:
+            dictionary = Lesson.objects\
+                .select_related('dictionary', 'dictionary__author')\
+                .get(pk=lesson_pk).dictionary
         if not (
             (
-                request.user == Dictionary.objects.get(pk=dictionary_pk).author
+                request.user == dictionary.author
             ) or (
-                Dictionary.objects.get(pk=dictionary_pk).status == 'public'
+                dictionary.status == 'public'
             )
         ):
             messages.error(request, 'Автор словаря ограничил доступ к нему')

@@ -6,7 +6,6 @@ from django.http import JsonResponse
 
 from django.shortcuts import render, get_object_or_404, redirect
 
-
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView
 
@@ -17,117 +16,101 @@ from lesson.forms import (
     ChangeNumberAnswersForm,
     ChangeCardStatus,
     LearnForm,
-    LearnFormReverse
 )
 from lesson.models import Lesson, Card
 from dictionary.models import Dictionary
 
 
 @available_for_learning
-def learn(request, dictionary_pk, user_pk, card_pk, translation_reverse=False):
+def learn(request, reverse, lesson_pk):
     """
-    The view handles rendering and checking cards.
-    translation_reverse - is flag to direction of
-    translation
-    When requested from lesson template the
-    lesson.get_random takes first random card from
-    lesson and pass it to this view.
-    Template shows only question, example and field
-    of form for answer.
-    When answer sent, the view check if form valid and
-    - increment number of attempt, correct answers,
-    change status if achieved number of required
-    answers and save data;
-    - cards learned within lesson save in session and
-    pass to lesson.get_random;
-    - by function lesson.get_random takes random next card;
-    - template shows correct answer and button to go
-    to next card;
+    View renders and checks answers.
+    - reverse - is flag to direction of translation
+    GET requests:
+    - checks visited dict in session;
+    - call lesson.get_random() to retrieve random and next cards;
+    - no next_card means end of lesson;
+    - add to context card and next_card and render;
+    POST requests:
+    - retrieve from form answer;
+    - call card.check_card() to check answer and change card data;
+    - append checked card to visited;
+    - call current_lesson.get_next() to retrieve next_card;
+    - no next_card triggers flushing visited;
+    - add to context card and next_card and render;
     """
-    dictionary = Dictionary.objects.get(pk=dictionary_pk)
-    lesson = get_object_or_404(Lesson, dictionary=dictionary, student=user_pk)
-    cards = Card.objects.filter(lesson=lesson).\
-        select_related('word').\
-        select_related('lesson')
-    card = Card.objects.get(pk=card_pk)
+    visited = request.session.setdefault('visited', [])
     if request.method == 'POST':
-        # with translation_reverse flag function determines which form render
-        if not translation_reverse:
-            form = LearnForm(request.POST)
-        else:
-            form = LearnFormReverse(request.POST)
-        card.all_attempts += 1
-        if 'visited' in request.session:
-            request.session['visited'].append(card_pk)
-        else:
-            request.session['visited'] = [card_pk]
-        request.session.modified = True
-        # word in form compare with data in db
-        # split all word in answer and question and remove commas, ect
-        # correct if answer in question
-        if form.is_valid():
-            cd = form.cleaned_data
-            if not translation_reverse:
-                answer = cd['translations'].lower()
-                question = card.word.translations.lower()
-            else:
-                answer = cd['body'].lower()
-                question = card.word.body.lower()
-            chars = (",", ";", "...", "|", "\n", "\t", "n‘", "n’",
-                          'n"', "n'", "‘", "’", '"', '  ', '   ', "'")
-            for char in chars:
-                answer = answer.replace(char, " ")
-                question = question.replace(char, " ")
-            if answer in question:
-                card.correct_answers += 1
-                card.all_correct_answers += 1
-                # if required number of answers achieved change status
-                if card.correct_answers == card.lesson.required_answers:
-                    card.status = 'done'
-                    messages.success(request, 'Карточка выучена')
-                messages.success(request, 'Это верный ответ')
-            else:
-                messages.error(request, 'Это неверный ответ')
-        card.save()
-        # call function to get next random card
-        next_card = lesson.get_random(
-            card=card,
-            visited=request.session['visited']
+        card = get_object_or_404(
+            Card.objects.select_related(
+                'lesson',
+                'word',
+                'lesson__dictionary'
+            ),
+            pk=request.POST.get('card_pk')
         )
-        # if all card visited end learning, clear
-        # visited and redirect to lesson
+        current_lesson = card.lesson
+        next_card = current_lesson.get_next(card, visited)
         if not next_card:
+            request.session['visited'] = []
+        form = LearnForm(request.POST)
+        if form.is_valid():
+            visited.append(card.pk)
+            cd = form.cleaned_data
+            answer = cd['translations'].lower() or cd['body'].lower()
+            status, msg = card.check_card(answer, reverse)
+
+        else:
+            status, msg = 'error', 'Что-то пошло не так, повторите попытку'
+
+        if status == 'success':
+            messages.success(request, msg)
+        else:
+            messages.error(request, msg)
+
+    else:
+        current_lesson = get_object_or_404(
+            Lesson.objects.select_related('dictionary'),
+            pk=lesson_pk
+        )
+
+        card, next_card = current_lesson.get_random(visited)
+
+        if not card:
+            if not current_lesson.get_active_cards():
+                messages.error(
+                    request,
+                    'В выбранном словаре нет активных, '
+                    'измените настройки словаря и попробуйте снова.'
+                )
             request.session['visited'] = []
             request.session.modified = True
             return redirect(
                 'lesson:lesson',
-                dictionary_pk=dictionary_pk,
-                user_pk=user_pk
+                dictionary_pk=current_lesson.dictionary.pk,
+                user_pk=request.user.pk
             )
-        # if next card exists add it to context
-        # to enable show nextcard button in template
-        context = {
-            'dictionary': dictionary,
-            'card': card,
-            'next_card': next_card,
-            'cards': cards,
-            'lesson': lesson,
-            'form': form,
-            'translation_reverse': translation_reverse
-        }
-    else:
-        if not translation_reverse:
-            form = LearnForm()
+
+        form = LearnForm(
+            initial={
+                'card_pk': card.pk,
+            },
+        )
+        if reverse:
+            field = form.fields['translations']
         else:
-            form = LearnFormReverse()
-        context = {
-            'dictionary': dictionary,
-            'card': card,
-            'cards': cards,
-            'lesson': lesson,
-            'form': form,
-            'translation_reverse': translation_reverse
-        }
+            field = form.fields['body']
+
+        field.widget = field.hidden_widget()
+
+    request.session.modified = True
+    context = {
+        'card': card,
+        'lesson': current_lesson,
+        'form': form,
+        'reverse': reverse,
+        'next_card': next_card
+    }
     return render(request, 'learn.html', context=context)
 
 
