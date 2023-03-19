@@ -153,6 +153,6 @@ class Card(models.Model):
             self.save()
             status, msg = 'success', 'Это верный ответ'
         else:
-            status, msg = 'error', 'Это неверный ответ'
+            status, msg = 'danger', 'Это неверный ответ'
         self.save()
         return status, msg

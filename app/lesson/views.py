@@ -1,13 +1,19 @@
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+from django.core import serializers
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.decorators import method_decorator
+from django.views import View
 
 from django.views.decorators.http import require_POST
-from django.views.generic import FormView
+from django.views.generic import FormView, DetailView
+from django.views.generic.detail import SingleObjectMixin
 
 from dictionary.decorators import available_for_learning
 from dictionary.forms import ChoiceDictionaryForm
@@ -19,6 +25,116 @@ from lesson.forms import (
 )
 from lesson.models import Lesson, Card
 from dictionary.models import Dictionary
+
+
+@method_decorator(available_for_learning, name='dispatch')
+class LearnView(View):
+    def get(self, request, *args, **kwargs):
+        view = LearnDetailView.as_view()
+        return view(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        view = LearnFormView.as_view()
+        return view(request, *args, **kwargs)
+
+
+class LearnFormView(SingleObjectMixin, FormView):
+    template_name = 'learn.html'
+    form_class = LearnForm
+    model = Lesson
+    visited = []
+    card = None
+    next_card = None
+
+    def post(self, request, *args, **kwargs):
+        self.visited = request.session.setdefault('visited', [])
+        self.card = get_object_or_404(
+            Card.objects.select_related(
+                'lesson',
+                'word',
+                'lesson__dictionary'
+            ),
+            pk=request.POST.get('card_pk')
+        )
+        self.object = self.card.lesson
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        reverse = self.kwargs['reverse']
+        self.visited.append(self.card.pk)
+        cd = form.cleaned_data
+        answer = cd['translations'].lower() or cd['body'].lower()
+        status, msg = self.card.check_card(answer, reverse)
+        self.next_card = self.object.get_next(self.card, self.visited)
+        if not self.next_card:
+            self.visited.clear()
+        self.request.session.modified = True
+        return self.render_to_response(self.get_context_data(status=status, msg=msg))
+
+    def form_invalid(self, form):
+        status, msg = 'danger', 'Что-то пошло не так, повторите попытку'
+        return self.render_to_response(self.get_context_data(status=status, msg=msg))
+
+    def get_context_data(self, **kwargs):
+        if kwargs['status'] == 'success':
+            messages.success(self.request, kwargs['msg'])
+        else:
+            messages.error(self.request, kwargs['msg'])
+        context = super().get_context_data(**kwargs)
+        context['reverse'] = self.kwargs['reverse']
+        context['next_card'] = self.next_card
+        context['card'] = self.card
+        return context
+
+
+class LearnDetailView(DetailView):
+    model = Lesson
+    pk_url_kwarg = 'lesson_pk'
+    template_name = 'learn.html'
+    context_object_name = 'lesson'
+    visited = []
+    card = None
+    next_card = None
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.visited = request.session.get('visited', [])
+        self.card, self.next_card = self.object.get_random(self.visited)
+        if not self.card:
+            if not self.object.get_active_cards():
+                messages.error(
+                    request,
+                    'В выбранном словаре нет активных карточек, '
+                    'измените настройки словаря и попробуйте снова.'
+                )
+            request.session['visited'] = []
+            request.session.modified = True
+            return redirect(
+                'lesson:lesson',
+                dictionary_pk=self.object.dictionary.pk,
+                user_pk=request.user.pk
+            )
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        reverse = self.kwargs['reverse']
+        form = LearnForm(
+            initial={
+                'card_pk': self.card.pk,
+            },
+        )
+        if reverse:
+            field = form.fields['translations']
+        else:
+            field = form.fields['body']
+        field.widget = field.hidden_widget()
+        context['form'] = form
+        context['reverse'] = reverse
+        context['next_card'] = self.next_card
+        context['card'] = self.card
+        return context
 
 
 @available_for_learning
@@ -50,9 +166,6 @@ def learn(request, reverse, lesson_pk):
             pk=request.POST.get('card_pk')
         )
         current_lesson = card.lesson
-        next_card = current_lesson.get_next(card, visited)
-        if not next_card:
-            request.session['visited'] = []
         form = LearnForm(request.POST)
         if form.is_valid():
             visited.append(card.pk)
@@ -61,12 +174,15 @@ def learn(request, reverse, lesson_pk):
             status, msg = card.check_card(answer, reverse)
 
         else:
-            status, msg = 'error', 'Что-то пошло не так, повторите попытку'
+            status, msg = 'danger', 'Что-то пошло не так, повторите попытку'
 
         if status == 'success':
             messages.success(request, msg)
         else:
             messages.error(request, msg)
+        next_card = current_lesson.get_next(card, visited)
+        if not next_card:
+            visited.clear()
 
     else:
         current_lesson = get_object_or_404(
@@ -80,7 +196,7 @@ def learn(request, reverse, lesson_pk):
             if not current_lesson.get_active_cards():
                 messages.error(
                     request,
-                    'В выбранном словаре нет активных, '
+                    'В выбранном словаре нет активных карточек, '
                     'измените настройки словаря и попробуйте снова.'
                 )
             request.session['visited'] = []
@@ -111,6 +227,19 @@ def learn(request, reverse, lesson_pk):
         'reverse': reverse,
         'next_card': next_card
     }
+    if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+        card = serializers.serialize("json", [card, ])
+        response_data = {
+            'action_status': status,
+            'msg': msg,
+            'card': card,
+            'reverse': reverse,
+            'next_card': next_card
+        }
+        return HttpResponse(
+            json.dumps(response_data),
+            content_type="application/json",
+        )
     return render(request, 'learn.html', context=context)
 
 

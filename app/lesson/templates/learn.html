@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% load lesson_tags %}
 
 {% block title %}Урок{% endblock %}
@@ -21,7 +22,8 @@
         <div class="card-body pb-1">
 <!--Next-card appears when answer send, therefore button bellow after sending answer-->
             {% if not form.is_bound %}
-                <form action="{% url 'lesson:learn' reverse=reverse lesson_pk=lesson.pk %}" method="post">
+                <form id="check_card" action="{% url 'lesson:learn' reverse=reverse lesson_pk=lesson.pk %}"
+                      method="post">
                     {{ form }}
                     {% csrf_token %}
                     <h6 class="py-2">
@@ -62,5 +64,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block script %}
+<script src='{% static "lesson/js/learn-1.js" %}'></script>
 {% endblock %}
