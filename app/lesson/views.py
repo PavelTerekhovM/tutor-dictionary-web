@@ -27,6 +27,58 @@ from lesson.models import Lesson, Card
 from dictionary.models import Dictionary
 
 
+class JSONResponseMixin:
+    def render_to_json_response(self, context, **response_kwargs):
+        return JsonResponse(
+            self.get_data(context),
+            **response_kwargs
+        )
+
+    def get_data(self, context):
+        card = serializers.serialize("json", [self.card.word, ])
+        context.pop('object')
+        context.pop('lesson')
+        context.pop('form')
+        context.pop('view')
+        context['card'] = card
+        context['card_pk'] = self.card.pk
+        return context
+
+
+class BaseLearnView(JSONResponseMixin, SingleObjectMixin):
+    model = Lesson
+    pk_url_kwarg = 'lesson_pk'
+    template_name = 'learn.html'
+    visited = []
+    card = None
+    next_card = None
+    reverse = None
+
+    def setup(self, request, *args, **kwargs):
+        self.visited = request.session.setdefault('visited', [])
+        self.reverse = kwargs['reverse']
+        super().setup(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status'] = kwargs.get('status')
+        context['msg'] = kwargs.get('msg')
+        context['reverse'] = self.reverse
+        context['next_card'] = self.next_card
+        context['card'] = self.card
+        return context
+
+    def render_to_response(self, context):
+        if self.request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            return self.render_to_json_response(context)
+        else:
+            if context['status'] == 'success':
+                messages.success(self.request, context['msg'])
+            else:
+                messages.error(self.request, context['msg'])
+            return super().render_to_response(context)
+
+
 @method_decorator(available_for_learning, name='dispatch')
 class LearnView(View):
     def get(self, request, *args, **kwargs):
@@ -38,16 +90,10 @@ class LearnView(View):
         return view(request, *args, **kwargs)
 
 
-class LearnFormView(SingleObjectMixin, FormView):
-    template_name = 'learn.html'
+class LearnFormView(BaseLearnView, FormView):
     form_class = LearnForm
-    model = Lesson
-    visited = []
-    card = None
-    next_card = None
 
     def post(self, request, *args, **kwargs):
-        self.visited = request.session.setdefault('visited', [])
         self.card = get_object_or_404(
             Card.objects.select_related(
                 'lesson',
@@ -60,55 +106,44 @@ class LearnFormView(SingleObjectMixin, FormView):
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        reverse = self.kwargs['reverse']
         self.visited.append(self.card.pk)
         cd = form.cleaned_data
-        answer = cd['translations'].lower() or cd['body'].lower()
-        status, msg = self.card.check_card(answer, reverse)
+        answer = cd['body'].lower() or cd['translations'].lower()
+        status, msg = self.card.check_card(answer, self.reverse)
         self.next_card = self.object.get_next(self.card, self.visited)
         if not self.next_card:
             self.visited.clear()
         self.request.session.modified = True
-        return self.render_to_response(self.get_context_data(status=status, msg=msg))
+        return self.render_to_response(
+            self.get_context_data(
+                status=status,
+                msg=msg
+            )
+        )
 
     def form_invalid(self, form):
         status, msg = 'danger', 'Что-то пошло не так, повторите попытку'
-        return self.render_to_response(self.get_context_data(status=status, msg=msg))
-
-    def get_context_data(self, **kwargs):
-        if kwargs['status'] == 'success':
-            messages.success(self.request, kwargs['msg'])
-        else:
-            messages.error(self.request, kwargs['msg'])
-        context = super().get_context_data(**kwargs)
-        context['reverse'] = self.kwargs['reverse']
-        context['next_card'] = self.next_card
-        context['card'] = self.card
-        return context
+        return self.render_to_response(
+            self.get_context_data(
+                status=status,
+                msg=msg
+            )
+        )
 
 
-class LearnDetailView(DetailView):
-    model = Lesson
-    pk_url_kwarg = 'lesson_pk'
-    template_name = 'learn.html'
-    context_object_name = 'lesson'
-    visited = []
-    card = None
-    next_card = None
-
+class LearnDetailView(BaseLearnView, DetailView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        self.visited = request.session.get('visited', [])
         self.card, self.next_card = self.object.get_random(self.visited)
         if not self.card:
+            self.visited.clear()
+            request.session.modified = True
             if not self.object.get_active_cards():
                 messages.error(
                     request,
                     'В выбранном словаре нет активных карточек, '
                     'измените настройки словаря и попробуйте снова.'
                 )
-            request.session['visited'] = []
-            request.session.modified = True
             return redirect(
                 'lesson:lesson',
                 dictionary_pk=self.object.dictionary.pk,
@@ -119,21 +154,17 @@ class LearnDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        reverse = self.kwargs['reverse']
         form = LearnForm(
             initial={
                 'card_pk': self.card.pk,
             },
         )
-        if reverse:
+        if self.reverse:
             field = form.fields['translations']
         else:
             field = form.fields['body']
         field.widget = field.hidden_widget()
         context['form'] = form
-        context['reverse'] = reverse
-        context['next_card'] = self.next_card
-        context['card'] = self.card
         return context
 
 
