@@ -3,7 +3,7 @@ from .views import (
     ChangeNumberAnswers,
     change_card_status,
     lesson,
-    learn, LearnDetailView, LearnView
+    LearnView
 )
 
 app_name = 'lesson'
@@ -32,16 +32,6 @@ urlpatterns = [
     path(
         'learn/<str:reverse>/<int:lesson_pk>/',
         LearnView.as_view(),
-        name='learn'
-    ),
-    path(
-        'learn/<int:lesson_pk>/',
-        learn,
-        name='learn'
-    ),
-    path(
-        'learn/<str:reverse>/<int:lesson_pk>/',
-        learn,
         name='learn'
     ),
 ]

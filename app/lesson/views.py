@@ -1,11 +1,9 @@
-import json
-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.core import serializers
 
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.decorators import method_decorator
@@ -29,7 +27,9 @@ from dictionary.models import Dictionary
 
 class JSONResponseMixin:
     """
-    Class responsible for preparing context and handling JSON response
+    Class responsible handling JSON response:
+    - add specific context;
+    - return response
     """
     def render_to_json_response(self, context, **response_kwargs):
         """
@@ -49,10 +49,7 @@ class JSONResponseMixin:
         rendering through AJAX
         """
         card = serializers.serialize("json", [self.card.word, ])
-        context.pop('object')
-        context.pop('lesson')
         context.pop('form')
-        context.pop('view')
         context['card'] = card
         context['card_pk'] = self.card.pk
         return context
@@ -60,7 +57,9 @@ class JSONResponseMixin:
 
 class HTMLResponseMixin:
     """
-    Class responsible for preparing messages and handling HTML response
+    Class responsible for handling HTML response
+    - add specific context and messages;
+    - return response
     """
     def render_to_html_response(self, context):
         """
@@ -69,7 +68,7 @@ class HTMLResponseMixin:
         """
         if self.card:
             return super().render_to_response(
-                self.set_messages(context),
+                self.get_html_data(context),
             )
         else:
             return redirect(
@@ -78,9 +77,9 @@ class HTMLResponseMixin:
                 user_pk=self.request.user.pk
             )
 
-    def set_messages(self, context):
+    def get_html_data(self, context):
         """
-        Method add messages to request before returning response
+        Method add data and messages to request before returning response
         """
         if context['status'] == 'success':
             messages.success(self.request, context['msg'])
@@ -88,6 +87,9 @@ class HTMLResponseMixin:
             messages.warning(self.request, context['msg'])
         else:
             messages.error(self.request, context['msg'])
+
+        context['lesson'] = self.object
+        context['card'] = self.card
         return context
 
 
@@ -115,12 +117,13 @@ class BaseLearnView(JSONResponseMixin, HTMLResponseMixin, SingleObjectMixin):
         """
         Method prepares common context for both HTML and JSON responses
         """
-        context = super().get_context_data(**kwargs)
-        context['status'] = kwargs.get('status')
-        context['msg'] = kwargs.get('msg')
-        context['reverse'] = self.reverse
-        context['next_card'] = self.next_card
-        context['card'] = self.card
+        context = {
+            'form': kwargs.get('form'),
+            'status': kwargs.get('status'),
+            'msg': kwargs.get('msg'),
+            'reverse': self.reverse,
+            'next_card': self.next_card,
+        }
         return context
 
     def render_to_response(self, context):
@@ -179,21 +182,21 @@ class LearnFormView(BaseLearnView, FormView):
         if not self.next_card:
             self.visited.clear()
         self.request.session.modified = True
-        return self.render_to_response(
-            self.get_context_data(
-                status=status,
-                msg=msg
-            )
+        context = self.get_context_data(
+            status=status,
+            msg=msg,
+            form=form,
         )
+        return self.render_to_response(context)
 
     def form_invalid(self, form):
         status, msg = 'danger', 'Что-то пошло не так, повторите попытку'
-        return self.render_to_response(
-            self.get_context_data(
-                status=status,
-                msg=msg
-            )
+        context = self.get_context_data(
+            status=status,
+            msg=msg,
+            form=form,
         )
+        return self.render_to_response(context)
 
 
 class LearnDetailView(BaseLearnView, DetailView):
@@ -217,11 +220,7 @@ class LearnDetailView(BaseLearnView, DetailView):
                            'измените настройки словаря и попробуйте снова.'
                 }
                 return self.render_to_response(context)
-
-        context = self.get_context_data(
-            object=self.object
-        )
-        return self.render_to_response(context)
+        return self.render_to_response(context=self.get_context_data())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -237,112 +236,6 @@ class LearnDetailView(BaseLearnView, DetailView):
         field.widget = field.hidden_widget()
         context['form'] = form
         return context
-
-
-@available_for_learning
-def learn(request, reverse, lesson_pk):
-    """
-    View renders and checks answers.
-    - reverse - is flag to direction of translation
-    GET requests:
-    - checks visited dict in session;
-    - call lesson.get_random() to retrieve random and next cards;
-    - no next_card means end of lesson;
-    - add to context card and next_card and render;
-    POST requests:
-    - retrieve from form answer;
-    - call card.check_card() to check answer and change card data;
-    - append checked card to visited;
-    - call current_lesson.get_next() to retrieve next_card;
-    - no next_card triggers flushing visited;
-    - add to context card and next_card and render;
-    """
-    visited = request.session.setdefault('visited', [])
-    if request.method == 'POST':
-        card = get_object_or_404(
-            Card.objects.select_related(
-                'lesson',
-                'word',
-                'lesson__dictionary'
-            ),
-            pk=request.POST.get('card_pk')
-        )
-        current_lesson = card.lesson
-        form = LearnForm(request.POST)
-        if form.is_valid():
-            visited.append(card.pk)
-            cd = form.cleaned_data
-            answer = cd['translations'].lower() or cd['body'].lower()
-            status, msg = card.check_card(answer, reverse)
-
-        else:
-            status, msg = 'danger', 'Что-то пошло не так, повторите попытку'
-
-        if status == 'success':
-            messages.success(request, msg)
-        else:
-            messages.error(request, msg)
-        next_card = current_lesson.get_next(card, visited)
-        if not next_card:
-            visited.clear()
-
-    else:
-        current_lesson = get_object_or_404(
-            Lesson.objects.select_related('dictionary'),
-            pk=lesson_pk
-        )
-
-        card, next_card = current_lesson.get_random(visited)
-
-        if not card:
-            if not current_lesson.get_active_cards():
-                messages.error(
-                    request,
-                    'В выбранном словаре нет активных карточек, '
-                    'измените настройки словаря и попробуйте снова.'
-                )
-            request.session['visited'] = []
-            request.session.modified = True
-            return redirect(
-                'lesson:lesson',
-                dictionary_pk=current_lesson.dictionary.pk,
-                user_pk=request.user.pk
-            )
-
-        form = LearnForm(
-            initial={
-                'card_pk': card.pk,
-            },
-        )
-        if reverse:
-            field = form.fields['translations']
-        else:
-            field = form.fields['body']
-
-        field.widget = field.hidden_widget()
-
-    request.session.modified = True
-    context = {
-        'card': card,
-        'lesson': current_lesson,
-        'form': form,
-        'reverse': reverse,
-        'next_card': next_card
-    }
-    if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-        card = serializers.serialize("json", [card, ])
-        response_data = {
-            'action_status': status,
-            'msg': msg,
-            'card': card,
-            'reverse': reverse,
-            'next_card': next_card
-        }
-        return HttpResponse(
-            json.dumps(response_data),
-            content_type="application/json",
-        )
-    return render(request, 'learn.html', context=context)
 
 
 @login_required
