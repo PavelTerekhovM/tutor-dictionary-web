@@ -22,19 +22,21 @@ function check_card(url, data) {
             if (status == 'success'){
                 var action_status = data['status'];
                 var msg = data['msg'];
-                var next_card = data['next_card'];
-                var card = JSON.parse(data['card']);
-                $('#card-header').html(
-                    card[0].fields.translations + ' - ' + card[0].fields.body
-                );
-                $('#example').html(
-                            'Пример: ' + card[0].fields.example
-                        );
-                $('#id_body').hide();
-                $('#check_card_btn').hide();
-                if (next_card == true){
-                    $('#next_card_btn').show();
-                };
+                if (action_status != 'danger') {
+                    var next_card = data['next_card'];
+                    var card = JSON.parse(data['card']);
+                    $('#card-header').html(
+                        card[0].fields.translations + ' - ' + card[0].fields.body
+                    );
+                    $('#example').html(
+                                'Пример: ' + card[0].fields.example
+                            );
+                    $('#id_body').hide();
+                    $('#check_card_btn').hide();
+                    if (next_card == true){
+                        $('#next_card_btn').show();
+                    };
+                }
             } else {
                 action_status = 'danger'
                 msg = 'Что-то пошло не так, повторите попытку'
@@ -59,30 +61,31 @@ function get_next_card(url) {
             if (status == 'success'){
                 var action_status = data['status'];
                 var msg = data['msg'];
-                var next_card = data['next_card'];
-                var card_pk = data['card_pk'];
-                var reverse = data['reverse'];
-                var card = JSON.parse(data['card']);
                 $('#next_card_btn').hide();
-                $('#check_card_btn').show();
-                if (reverse == 'reverse') {
-                    $('#card-header').html(
-                            card[0].fields.body
-                        );
-                    $('#example').html(
-                            'Пример: ' + card[0].fields.example.split('—')[0]
-                        );
-                } else {
-                    $('#card-header').html(
-                            card[0].fields.translations
-                        );
-                    $('#example').html(
-                            'Пример: ' + card[0].fields.example.split('—')[1]
-                        );
-                };
-
-                $('#id_card_pk').val(card_pk);
-                $('#id_body').show();
+                if (action_status != 'danger') {
+                    var next_card = data['next_card'];
+                    var card_pk = data['card_pk'];
+                    var reverse = data['reverse'];
+                    var card = JSON.parse(data['card']);
+                    $('#check_card_btn').show();
+                    if (reverse == 'reverse') {
+                        $('#card-header').html(
+                                card[0].fields.body
+                            );
+                        $('#example').html(
+                                'Пример: ' + card[0].fields.example.split('—')[0]
+                            );
+                    } else {
+                        $('#card-header').html(
+                                card[0].fields.translations
+                            );
+                        $('#example').html(
+                                'Пример: ' + card[0].fields.example.split('—')[1]
+                            );
+                    };
+                    $('#id_card_pk').val(card_pk);
+                    $('#id_body').show();
+                }
             } else {
                 action_status = 'danger'
                 msg = 'Что-то пошло не так, повторите попытку'

@@ -28,13 +28,26 @@ from dictionary.models import Dictionary
 
 
 class JSONResponseMixin:
+    """
+    Class responsible for preparing context and handling JSON response
+    """
     def render_to_json_response(self, context, **response_kwargs):
+        """
+        No self.card means there is no content to serialise
+        """
+        if not self.card:
+            return JsonResponse(context)
+
         return JsonResponse(
             self.get_data(context),
             **response_kwargs
         )
 
     def get_data(self, context):
+        """
+        Method removes lesson, form and view as they don't need for
+        rendering through AJAX
+        """
         card = serializers.serialize("json", [self.card.word, ])
         context.pop('object')
         context.pop('lesson')
@@ -45,7 +58,46 @@ class JSONResponseMixin:
         return context
 
 
-class BaseLearnView(JSONResponseMixin, SingleObjectMixin):
+class HTMLResponseMixin:
+    """
+    Class responsible for preparing messages and handling HTML response
+    """
+    def render_to_html_response(self, context):
+        """
+        No self.card means there is no content to retrive, therefore
+        returning redirect with messages
+        """
+        if self.card:
+            return super().render_to_response(
+                self.set_messages(context),
+            )
+        else:
+            return redirect(
+                'lesson:lesson',
+                dictionary_pk=self.object.dictionary.pk,
+                user_pk=self.request.user.pk
+            )
+
+    def set_messages(self, context):
+        """
+        Method add messages to request before returning response
+        """
+        if context['status'] == 'success':
+            messages.success(self.request, context['msg'])
+        elif context['status'] == 'warning':
+            messages.warning(self.request, context['msg'])
+        else:
+            messages.error(self.request, context['msg'])
+        return context
+
+
+class BaseLearnView(JSONResponseMixin, HTMLResponseMixin, SingleObjectMixin):
+    """
+    Base class for LearnView:
+    - set common attrs for all methods;
+    - prepare common context for both HTML and JSON responses
+    - dispatch request to HTML and JSON responses
+    """
     model = Lesson
     pk_url_kwarg = 'lesson_pk'
     template_name = 'learn.html'
@@ -60,6 +112,9 @@ class BaseLearnView(JSONResponseMixin, SingleObjectMixin):
         super().setup(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """
+        Method prepares common context for both HTML and JSON responses
+        """
         context = super().get_context_data(**kwargs)
         context['status'] = kwargs.get('status')
         context['msg'] = kwargs.get('msg')
@@ -69,18 +124,20 @@ class BaseLearnView(JSONResponseMixin, SingleObjectMixin):
         return context
 
     def render_to_response(self, context):
+        """
+        Method dispatchs request to HTML and JSON responses
+        """
         if self.request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
             return self.render_to_json_response(context)
         else:
-            if context['status'] == 'success':
-                messages.success(self.request, context['msg'])
-            else:
-                messages.error(self.request, context['msg'])
-            return super().render_to_response(context)
+            return self.render_to_html_response(context)
 
 
 @method_decorator(available_for_learning, name='dispatch')
 class LearnView(View):
+    """
+    Class responsible to distinguish GET and POST requests
+    """
     def get(self, request, *args, **kwargs):
         view = LearnDetailView.as_view()
         return view(request, *args, **kwargs)
@@ -91,6 +148,14 @@ class LearnView(View):
 
 
 class LearnFormView(BaseLearnView, FormView):
+    """
+    Class responsible for handling POST requests:
+    - retriving answer from form;
+    - call card.check_card() to check answer and change card data;
+    - append checked card to visited;
+    - call lesson.get_next() to retrieve next_card;
+    - no next_card triggers flushing visited;
+    """
     form_class = LearnForm
 
     def post(self, request, *args, **kwargs):
@@ -132,6 +197,13 @@ class LearnFormView(BaseLearnView, FormView):
 
 
 class LearnDetailView(BaseLearnView, DetailView):
+    """
+    Class responsible for handling GET requests:
+    - call lesson.get_random() to retrieve random and next cards;
+    - no next_card triggers flushing visited;
+    - no active_cards() triggers end of lesson and redirecting;
+    - add to context form with initial;
+    """
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         self.card, self.next_card = self.object.get_random(self.visited)
@@ -139,17 +211,16 @@ class LearnDetailView(BaseLearnView, DetailView):
             self.visited.clear()
             request.session.modified = True
             if not self.object.get_active_cards():
-                messages.error(
-                    request,
-                    'В выбранном словаре нет активных карточек, '
-                    'измените настройки словаря и попробуйте снова.'
-                )
-            return redirect(
-                'lesson:lesson',
-                dictionary_pk=self.object.dictionary.pk,
-                user_pk=request.user.pk
-            )
-        context = self.get_context_data(object=self.object)
+                context = {
+                    'status': 'danger',
+                    'msg': 'В выбранном словаре нет активных карточек, '
+                           'измените настройки словаря и попробуйте снова.'
+                }
+                return self.render_to_response(context)
+
+        context = self.get_context_data(
+            object=self.object
+        )
         return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
