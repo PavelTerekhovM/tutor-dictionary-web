@@ -110,7 +110,7 @@ class BaseLearnView(JSONResponseMixin, HTMLResponseMixin, SingleObjectMixin):
 
     def setup(self, request, *args, **kwargs):
         self.visited = request.session.setdefault('visited', [])
-        self.reverse = kwargs['reverse']
+        self.reverse = kwargs.get('reverse', None)
         super().setup(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -136,7 +136,7 @@ class BaseLearnView(JSONResponseMixin, HTMLResponseMixin, SingleObjectMixin):
             return self.render_to_html_response(context)
 
 
-@method_decorator(available_for_learning, name='dispatch')
+@method_decorator([available_for_learning, login_required], name='dispatch')
 class LearnView(View):
     """
     Class responsible to distinguish GET and POST requests

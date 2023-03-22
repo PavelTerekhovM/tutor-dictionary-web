@@ -1,0 +1,49 @@
+[
+{
+   "model": "dictionary.dictionary",
+   "pk": 1,
+   "fields": {
+      "title": "Test 8",
+      "slug": "test-8",
+      "created": "2023-03-10T07:14:18.691Z",
+      "status": "public",
+      "note": "Test3",
+      "file": "file/2023/03/10/Test_8En-Ru.xml",
+      "author": 1,
+      "student": [
+         1,
+         2
+      ],
+      "word": [
+         1,
+         2,
+         3,
+         4,
+         5
+      ]
+   }
+},
+{
+   "model": "dictionary.dictionary",
+   "pk": 2,
+   "fields": {
+      "title": "Test 5-7",
+      "slug": "test-5-7",
+      "created": "2023-03-13T16:58:43.971Z",
+      "status": "private",
+      "note": "One more dictionary",
+      "file": "file/2023/03/13/Test_5-7En-Ru.xml",
+      "author": 1,
+      "student": [
+         1
+      ],
+      "word": [
+         6,
+         7,
+         8,
+         9,
+         10
+      ]
+   }
+}
+]

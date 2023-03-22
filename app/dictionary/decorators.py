@@ -46,13 +46,18 @@ def available_for_learning(f):
                 .get(pk=dictionary_pk)
         else:
             dictionary = Lesson.objects\
-                .select_related('dictionary', 'dictionary__author')\
+                .select_related('dictionary',
+                                'dictionary__author')\
                 .get(pk=lesson_pk).dictionary
         if not (
             (
                 request.user == dictionary.author
             ) or (
-                dictionary.status == 'public'
+                (
+                    dictionary.status == 'public'
+                ) and (
+                request.user in dictionary.student.all()
+                )
             )
         ):
             messages.error(request, 'Автор словаря ограничил доступ к нему')

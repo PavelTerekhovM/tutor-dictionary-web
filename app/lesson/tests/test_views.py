@@ -1,3 +1,4 @@
+import json
 import os
 
 from django.conf import settings
@@ -229,3 +230,282 @@ class TestChangeCardStatus(BaseTestSettings):
         tested_card.refresh_from_db()
         self.assertEqual('active', tested_card.status)
         self.assertEqual(0, tested_card.correct_answers)
+
+
+class TestLearnView(BaseTestSettings):
+    """
+    Testcase for testing LearnView GET request
+    """
+    fixtures = [
+        'users.json',
+        'words.json',
+        'dictionaries.json',
+        'lessons.json',
+        'cards.json'
+    ]
+
+    def test_get_not_student(self):
+        """
+        Testing GET by users who aren't students
+        """
+        lesson = Lesson.objects.latest('created')
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        url_redirect = reverse('dictionary:my_dictionaries')
+
+        # testting access to lesson with private dict by unauth user
+        res = self.client.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # testting access to lesson with private dict by auth user
+        res = self.client_auth.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # change status public and check
+        self.assertEqual(
+            'private',
+            lesson.dictionary.status
+        )
+        lesson.dictionary.status = 'public'
+        lesson.save()
+        self.assertEqual(
+            'public',
+            lesson.dictionary.status,
+        )
+
+        # testting access to lesson with public dict by unauth user
+        res = self.client.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # testting access to lesson with public dict by auth user
+        res = self.client_auth.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+    def test_get_by_student(self):
+        """
+        Testing get request from student of lesson
+        """
+        # add auth user to student lists
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        res = self.client_auth.get(url)
+
+        # check status code 200 and card, next_card and form in context
+        self.assertEqual(200, res.status_code)
+        self.assertIn('next_card', res.context_data)
+        self.assertIn('form', res.context_data)
+        self.assertIn('card', res.context_data)
+        self.assertIn('reverse', res.context_data)
+        self.assertIsNone(res.context_data.get('reverse'))
+
+        # check form is unbound, contain 'body', card_pk, translation
+        self.assertFalse(res.context_data.get('form').is_bound)
+        self.assertIn('card_pk', res.context_data.get('form').fields)
+        self.assertIn('body', res.context_data.get('form').fields)
+        self.assertIn('translations', res.context_data.get('form').fields)
+
+        # check card is among cards of lesson and next_card exists
+        self.assertIn(
+            res.context_data.get('card').word,
+            lesson.dictionary.word.all()
+        )
+        self.assertTrue(res.context_data.get('next_card'))
+
+        # check if reverse translation works
+        url = reverse(
+            'lesson:learn',
+            kwargs={
+                'lesson_pk': lesson.pk,
+                'reverse': 'reverse'
+            }
+        )
+        res = self.client_auth.get(url)
+
+        self.assertIn('reverse', res.context_data)
+        self.assertEqual('reverse', res.context_data.get('reverse'))
+
+    def test_get_no_active_cards(self):
+        """
+        Testing get request from student to lesson with one or no active cards
+        """
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+
+        # set all cards as 'done'
+        for card in lesson.card_set.all():
+            card.status = 'done'
+            card.save()
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        url_redirect = reverse(
+            'lesson:lesson',
+            kwargs={
+                'dictionary_pk': lesson.dictionary.pk,
+                'user_pk': self.user_auth.pk,
+            }
+        )
+
+        # check 302 status if no cards available
+        res = self.client_auth.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # set one cards as 'active'
+        card = lesson.card_set.latest('created')
+        card.status = 'active'
+        card.save()
+
+        # check 200 status and next_card is False
+        res = self.client_auth.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertIn('next_card', res.context_data)
+        self.assertIn('form', res.context_data)
+        self.assertIn('card', res.context_data)
+        self.assertFalse(res.context_data.get('next_card'))
+
+        # set one cards as 'disable'
+        card = lesson.card_set.latest('created')
+        card.status = 'disable'
+        card.save()
+
+        # check 302 status if no cards available
+        res = self.client_auth.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+
+class TestLearnViewAJAX(BaseTestSettings):
+    """
+    Testcase for testing LearnView AJAX GET request
+    """
+    fixtures = [
+        'users.json',
+        'words.json',
+        'dictionaries.json',
+        'lessons.json',
+        'cards.json'
+    ]
+
+    def test_get_by_student_ajax(self):
+        """
+        Testing AJAX GET requests by users who is student
+        """
+        # add auth user to student lists
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        res = self.client_auth.get(url, **header)
+
+        # check status code 200 and 'application/json' as Content-Type
+        self.assertEqual(200, res.status_code)
+        self.assertIn('application/json', res.headers.get('Content-Type'))
+
+        # check if next_card, msg, status, card, reverse in content
+        self.assertIn('msg', json.loads(res.content))
+        self.assertIn('status', json.loads(res.content))
+        self.assertIn('next_card', json.loads(res.content))
+        self.assertIn('card', json.loads(res.content))
+        self.assertIn('card_pk', json.loads(res.content))
+        self.assertIn('reverse', json.loads(res.content))
+
+        # check card is among cards of lesson and next_card exists
+        self.assertIn(
+            json.loads(res.content).get('card_pk'),
+            lesson.dictionary.word.all().values_list(flat=True)
+        )
+        self.assertTrue(json.loads(res.content).get('next_card'))
+
+        # check if reverse translation works
+        url = reverse(
+            'lesson:learn',
+            kwargs={
+                'lesson_pk': lesson.pk,
+                'reverse': 'reverse'
+            }
+        )
+        res = self.client_auth.get(url, **header)
+
+        self.assertIn('reverse', json.loads(res.content))
+        self.assertEqual('reverse', json.loads(res.content).get('reverse'))
+
+    def test_get_no_active_cards_ajax(self):
+        """
+        Testing AJAX GET request from student to lesson with one/no active card
+        """
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+
+        # set all cards as 'done'
+        for card in lesson.card_set.all():
+            card.status = 'done'
+            card.save()
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        url_redirect = reverse(
+            'lesson:lesson',
+            kwargs={
+                'dictionary_pk': lesson.dictionary.pk,
+                'user_pk': self.user_auth.pk,
+            }
+        )
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+
+        # check 200 status if no cards available
+        res = self.client_auth.get(url, **header)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual('application/json', res.headers.get('Content-Type'))
+        self.assertIn('msg', json.loads(res.content))
+        self.assertIn('status', json.loads(res.content))
+        self.assertEqual('danger', json.loads(res.content).get('status'))
+        self.assertEqual(
+            'В выбранном словаре нет активных карточек, '
+            'измените настройки словаря и попробуйте снова.',
+            json.loads(res.content).get('msg')
+        )
+
+        # set one cards as 'active'
+        card = lesson.card_set.latest('created')
+        card.status = 'active'
+        card.save()
+
+        # check 200 status and next_card is False
+        res = self.client_auth.get(url, **header)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual('application/json', res.headers.get('Content-Type'))
+        self.assertIn('card', json.loads(res.content))
+        self.assertIn('card_pk', json.loads(res.content))
+        self.assertIn('next_card', json.loads(res.content))
+        self.assertFalse(json.loads(res.content).get('next_card'))
+
+        # set one cards as 'disable'
+        card = lesson.card_set.latest('created')
+        card.status = 'disable'
+        card.save()
+
+        res = self.client_auth.get(url, **header)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual('application/json', res.headers.get('Content-Type'))
+        self.assertEqual('danger', json.loads(res.content).get('status'))

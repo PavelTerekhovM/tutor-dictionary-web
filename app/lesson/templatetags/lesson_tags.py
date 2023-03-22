@@ -6,5 +6,9 @@ register = template.Library()
 
 @register.filter
 def cut_example(text, arg):
-    text = text.split('—')
-    return text[int(arg)]
+    try:
+        text = text.split('—')
+        res = text[int(arg)]
+    except Exception:
+        return '—'
+    return res

@@ -160,3 +160,5 @@ MESSAGE_TAGS = {
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+FIXTURE_DIRS = (os.path.join(BASE_DIR, 'core/tests/sample_file/fixtures'),)

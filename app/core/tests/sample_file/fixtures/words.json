@@ -1,0 +1,112 @@
+[
+{
+   "model": "dictionary.word",
+   "pk": 1,
+   "fields": {
+      "body": "schedule",
+      "slug": "schedule",
+      "translations": "расписание",
+      "example": "fixed schedule — чёткий график",
+      "created": "2023-03-08T12:36:29.678Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 2,
+   "fields": {
+      "body": "decision",
+      "slug": "decision",
+      "translations": "решение (сделать что-л.)",
+      "example": "a decision about / on — решение о",
+      "created": "2023-03-08T12:36:29.770Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 3,
+   "fields": {
+      "body": "charity",
+      "slug": "charity",
+      "translations": "благотворительность",
+      "example": "act of charity — благотворительная акция",
+      "created": "2023-03-08T12:36:29.775Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 4,
+   "fields": {
+      "body": "sincerely",
+      "slug": "sincerely",
+      "translations": "честно, прямо, открыто",
+      "example": "",
+      "created": "2023-03-08T12:36:29.780Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 5,
+   "fields": {
+      "body": "potential",
+      "slug": "potential",
+      "translations": "потенциал",
+      "example": "to fulfil one's potential — реализовать свой потенциал",
+      "created": "2023-03-08T12:36:29.784Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 6,
+   "fields": {
+      "body": "appreciate",
+      "slug": "appreciate",
+      "translations": "оценивать, (высоко) ценить",
+      "example": "to appreciate deeply / greatly / keenly / sincerely / very much — высоко ценить (кого-л. / что-л.)",
+      "created": "2023-03-08T12:36:29.788Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 7,
+   "fields": {
+      "body": "independent",
+      "slug": "independent",
+      "translations": "политически независимый, обладающий самоуправлением, автономный",
+      "example": "independent state — независимое государство",
+      "created": "2023-03-08T12:36:29.792Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 8,
+   "fields": {
+      "body": "previous",
+      "slug": "previous",
+      "translations": "предыдущий",
+      "example": "the previous day — накануне",
+      "created": "2023-03-08T12:36:29.797Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 9,
+   "fields": {
+      "body": "crucial",
+      "slug": "crucial",
+      "translations": "ключевой",
+      "example": "crucial experiment — решающий эксперимент",
+      "created": "2023-03-08T12:36:29.801Z"
+   }
+},
+{
+   "model": "dictionary.word",
+   "pk": 10,
+   "fields": {
+      "body": "question",
+      "slug": "question",
+      "translations": "вопрос",
+      "example": "awkward question — неуместный, нелепый вопрос",
+      "created": "2023-03-08T12:36:29.806Z"
+   }
+}
+]

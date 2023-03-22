@@ -1,0 +1,197 @@
+[
+{
+   "model": "lesson.card",
+   "pk": 1,
+   "fields": {
+      "word": 1,
+      "lesson": 1,
+      "created": "2023-03-10T15:43:38.855Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 2,
+   "fields": {
+      "word": 2,
+      "lesson": 1,
+      "created": "2023-03-10T15:43:38.861Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 3,
+   "fields": {
+      "word": 3,
+      "lesson": 1,
+      "created": "2023-03-10T15:43:38.865Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 4,
+   "fields": {
+      "word": 4,
+      "lesson": 1,
+      "created": "2023-03-10T15:43:38.868Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 5,
+   "fields": {
+      "word": 5,
+      "lesson": 1,
+      "created": "2023-03-10T15:43:38.872Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 6,
+   "fields": {
+      "word": 1,
+      "lesson": 2,
+      "created": "2023-03-10T15:43:38.875Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 7,
+   "fields": {
+      "word": 2,
+      "lesson": 2,
+      "created": "2023-03-10T15:43:38.882Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 8,
+   "fields": {
+      "word": 3,
+      "lesson": 2,
+      "created": "2023-03-10T15:43:38.885Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 9,
+   "fields": {
+      "word": 4,
+      "lesson": 2,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 10,
+   "fields": {
+      "word": 5,
+      "lesson": 2,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 11,
+   "fields": {
+      "word": 6,
+      "lesson": 3,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 12,
+   "fields": {
+      "word": 7,
+      "lesson": 3,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 13,
+   "fields": {
+      "word": 8,
+      "lesson": 3,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 14,
+   "fields": {
+      "word": 9,
+      "lesson": 3,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+},
+{
+   "model": "lesson.card",
+   "pk": 15,
+   "fields": {
+      "word": 10,
+      "lesson": 3,
+      "created": "2023-03-10T15:43:38.888Z",
+      "correct_answers": 0,
+      "status": "active",
+      "all_attempts": 0,
+      "all_correct_answers": 0
+   }
+}
+]

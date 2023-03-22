@@ -361,14 +361,12 @@ class ChangeStatus(BaseTestSettings):
         header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         res = self.client_auth.get(
             url,
-            payload,
             **header,
         )
         self.assertEqual(405, res.status_code)
 
         res = self.client.get(
             url,
-            payload,
             **header,
         )
         self.assertEqual(302, res.status_code)
