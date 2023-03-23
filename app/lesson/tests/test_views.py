@@ -232,9 +232,9 @@ class TestChangeCardStatus(BaseTestSettings):
         self.assertEqual(0, tested_card.correct_answers)
 
 
-class TestLearnView(BaseTestSettings):
+class BaseLearnView(BaseTestSettings):
     """
-    Testcase for testing LearnView GET request
+    Base class for testing LearnView requests
     """
     fixtures = [
         'users.json',
@@ -243,6 +243,12 @@ class TestLearnView(BaseTestSettings):
         'lessons.json',
         'cards.json'
     ]
+
+
+class TestLearnViewGet(BaseLearnView):
+    """
+    Testcase for testing LearnView GET request
+    """
 
     def test_get_not_student(self):
         """
@@ -389,17 +395,10 @@ class TestLearnView(BaseTestSettings):
         self.assertEqual(url_redirect, res.url)
 
 
-class TestLearnViewAJAX(BaseTestSettings):
+class TestLearnViewGetAJAX(BaseLearnView):
     """
     Testcase for testing LearnView AJAX GET request
     """
-    fixtures = [
-        'users.json',
-        'words.json',
-        'dictionaries.json',
-        'lessons.json',
-        'cards.json'
-    ]
 
     def test_get_by_student_ajax(self):
         """
@@ -509,3 +508,286 @@ class TestLearnViewAJAX(BaseTestSettings):
         self.assertEqual(200, res.status_code)
         self.assertEqual('application/json', res.headers.get('Content-Type'))
         self.assertEqual('danger', json.loads(res.content).get('status'))
+
+
+class TestLearnViewPost(BaseLearnView):
+    """
+    Testcase for testing LearnView POST request
+    """
+
+    def test_post_not_student(self):
+        """
+        Testing POST by users who aren't students
+        """
+        lesson = Lesson.objects.latest('created')
+        card = lesson.card_set.latest('created')
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        url_redirect = reverse('dictionary:my_dictionaries')
+
+        payload = {
+            'card_pk': card.pk,
+            'body': card.word.body,
+            'translations': '',
+        }
+
+        # testing POST requests to lesson with private dict by unauth user
+        res = self.client.post(url, payload)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # testing access to lesson with private dict by auth user
+        res = self.client_auth.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # change status public and check
+        self.assertEqual(
+            'private',
+            lesson.dictionary.status
+        )
+        lesson.dictionary.status = 'public'
+        lesson.save()
+        self.assertEqual(
+            'public',
+            lesson.dictionary.status,
+        )
+
+        # testing POST request to lesson with public dict by unauth user
+        res = self.client.post(url, payload)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+        # testing POST request to lesson with public dict by auth user
+        res = self.client_auth.get(url)
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(url_redirect, res.url)
+
+    def test_post_by_student(self):
+        """
+        Testing POST request from student of lesson
+        """
+        # add auth user to student lists
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+        card = lesson.card_set.latest('created')
+        correct_answers = card.correct_answers
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+
+        payload = {
+            'card_pk': card.pk,
+            'body': card.word.body,
+            'translations': '',
+        }
+        res = self.client_auth.post(url, payload)
+
+        # check status code 200 and card, next_card and form in context
+        self.assertEqual(200, res.status_code)
+        self.assertIn('form', res.context_data)
+        self.assertIn('card', res.context_data)
+        self.assertIn('reverse', res.context_data)
+
+        # check message confirm correct answer, form is_bound and valid
+        self.assertIn(
+            'Это верный ответ',
+            list(res.context['messages'])[0].message
+        )
+        self.assertEqual('success', list(res.context['messages'])[0].tags)
+        self.assertTrue(res.context_data.get('form').is_bound)
+        self.assertTrue(res.context_data.get('form').is_valid())
+
+        # check if number of correct answers incremented
+        card.refresh_from_db()
+        self.assertEqual(correct_answers + 1, card.correct_answers)
+
+        # check if reverse translation works
+        correct_answers = card.correct_answers
+        url = reverse(
+            'lesson:learn',
+            kwargs={
+                'lesson_pk': lesson.pk,
+                'reverse': 'reverse'
+            }
+        )
+        payload = {
+            'card_pk': card.pk,
+            'body': '',
+            'translations': card.word.translations,
+        }
+
+        res = self.client_auth.post(url, payload)
+
+        # check status code 200 and reverse in context
+        self.assertEqual(200, res.status_code)
+        self.assertIn('reverse', res.context_data)
+        self.assertEqual('reverse', res.context_data.get('reverse'))
+
+        #  check message confirms correct answer
+        self.assertIn(
+            'Это верный ответ',
+            list(res.context['messages'])[0].message
+        )
+        self.assertEqual('success', list(res.context['messages'])[0].tags)
+
+        # check if number of correct answers incremented
+        card.refresh_from_db()
+        self.assertEqual(correct_answers + 1, card.correct_answers)
+
+    def test_post_by_student_negative(self):
+        """
+        Testing POST request from student of lesson with wrong answer
+        """
+        # add auth user to student lists
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+        card = lesson.card_set.latest('created')
+        correct_answers = card.correct_answers
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+
+        payload = {
+            'card_pk': card.pk,
+            'body': 'wrong_answer',
+            'translations': '',
+        }
+        res = self.client_auth.post(url, payload)
+
+        # check status code 200 and card, next_card and form in context
+        self.assertEqual(200, res.status_code)
+        self.assertIn('form', res.context_data)
+        self.assertIn('card', res.context_data)
+        self.assertIn('reverse', res.context_data)
+
+        # check message confirm incorrect answer, form is_bound and valid
+        self.assertIn(
+            'Это неверный ответ',
+            list(res.context['messages'])[0].message
+        )
+        self.assertEqual('warning', list(res.context['messages'])[0].tags)
+        self.assertTrue(res.context_data.get('form').is_bound)
+        self.assertTrue(res.context_data.get('form').is_valid())
+
+        # check if number of correct answers unchanged
+        card.refresh_from_db()
+        self.assertEqual(correct_answers, card.correct_answers)
+
+        # check if reverse translation works
+        correct_answers = card.correct_answers
+        url = reverse(
+            'lesson:learn',
+            kwargs={
+                'lesson_pk': lesson.pk,
+                'reverse': 'reverse'
+            }
+        )
+        payload = {
+            'card_pk': card.pk,
+            'body': '',
+            'translations': 'wrong_answer',
+        }
+
+        res = self.client_auth.post(url, payload)
+
+        # check status code 200 and reverse in context
+        self.assertEqual(200, res.status_code)
+        self.assertIn('reverse', res.context_data)
+        self.assertEqual('reverse', res.context_data.get('reverse'))
+
+        #  check message confirms incorrect answer
+        self.assertIn(
+            'Это неверный ответ',
+            list(res.context['messages'])[0].message
+        )
+        self.assertEqual('warning', list(res.context['messages'])[0].tags)
+
+        # check if number of correct answers incremented
+        card.refresh_from_db()
+        self.assertEqual(correct_answers, card.correct_answers)
+
+
+class TestLearnViewPostAJAX(BaseLearnView):
+    """
+    Testcase for testing LearnView AJAX POST request
+    """
+
+    def test_post_by_student_ajax(self):
+        """
+        Testing AJAX POST requests by users who is student
+        """
+        # add auth user to student lists
+        lesson = Lesson.objects.get(pk=1)
+        lesson.dictionary.student.add(self.user_auth)
+
+        card = lesson.card_set.latest('created')
+        correct_answers = card.correct_answers
+
+        url = reverse(
+            'lesson:learn',
+            kwargs={'lesson_pk': lesson.pk}
+        )
+        header = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+
+        payload = {
+            'card_pk': card.pk,
+            'body': card.word.body,
+            'translations': '',
+        }
+        res = self.client_auth.post(url, **header, data=payload)
+
+        # check status code 200 and 'application/json' as Content-Type
+        self.assertEqual(200, res.status_code)
+        self.assertIn('application/json', res.headers.get('Content-Type'))
+
+        # check if next_card, msg, status, card, reverse in content
+        self.assertIn('msg', json.loads(res.content))
+        self.assertIn('status', json.loads(res.content))
+        self.assertIn('next_card', json.loads(res.content))
+        self.assertIn('card', json.loads(res.content))
+        self.assertIn('card_pk', json.loads(res.content))
+        self.assertIn('reverse', json.loads(res.content))
+
+        #  check message confirms correct answer
+        self.assertIn('Это верный ответ', json.loads(res.content).get('msg'))
+        self.assertEqual('success', json.loads(res.content).get('status'))
+
+        # check if number of correct answers incremented
+        card.refresh_from_db()
+        self.assertEqual(correct_answers + 1, card.correct_answers)
+
+        # check if reverse translation works
+        correct_answers = card.correct_answers
+        url = reverse(
+            'lesson:learn',
+            kwargs={
+                'lesson_pk': lesson.pk,
+                'reverse': 'reverse'
+            }
+        )
+        payload = {
+            'card_pk': card.pk,
+            'body': '',
+            'translations': card.word.translations,
+        }
+        res = self.client_auth.post(url, **header, data=payload)
+
+        # check status code 200 and 'application/json' as Content-Type
+        self.assertEqual(200, res.status_code)
+        self.assertIn('application/json', res.headers.get('Content-Type'))
+
+        #  check message confirms correct answer
+        self.assertIn('Это верный ответ', json.loads(res.content).get('msg'))
+        self.assertEqual('success', json.loads(res.content).get('status'))
+
+        # check if number of correct answers incremented
+        card.refresh_from_db()
+        self.assertEqual(correct_answers + 1, card.correct_answers)
