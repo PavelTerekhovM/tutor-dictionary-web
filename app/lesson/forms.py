@@ -1,5 +1,4 @@
 from django import forms
-from dictionary.models import Word
 from lesson.models import Lesson, Card
 
 QUANTITY_CHOICES = [(i, str(i)) for i in range(1, 11)]
@@ -11,33 +10,23 @@ STATUS_CHOICES = (
 )
 
 
-class LearnForm(forms.ModelForm):
-    class Meta:
-        model = Word
-        fields = ('translations',)
-        labels = {
-            'translations': '',
-        }
-        widgets = {
-            'translations': forms.Textarea(
-                attrs={"class": "form-control", "rows": 2}
-            )
-        }
-
-
-class LearnFormReverse(forms.ModelForm):
-    """
-    the form below required for reverse translation
-    """
-    class Meta:
-        model = Word
-        fields = ('body',)
-        labels = {
-            'body': '',
-        }
-        widgets = {
-            'body': forms.Textarea(attrs={"class": "form-control", "rows": 2})
-        }
+class LearnForm(forms.Form):
+    card_pk = forms.ModelChoiceField(
+        queryset=Card.objects.all(),
+        widget=forms.HiddenInput,
+    )
+    translations = forms.CharField(
+        max_length=300,
+        required=False,
+        label='',
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2})
+    )
+    body = forms.CharField(
+        max_length=300,
+        required=False,
+        label='',
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2})
+    )
 
 
 class ChangeNumberAnswersForm(forms.Form):

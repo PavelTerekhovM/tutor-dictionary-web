@@ -21,22 +21,29 @@
 
     <div class="w-25 justify-content-end">
         {% if request.user != dictionary.author %}
+        <!--forms to add/remove from my dictionaries -->
         <div>
             {% if request.user in dictionary.student.all %}
-            <form action="{% url 'dictionary:remove_dictionary' %}" method="post">
+                <form action="{% url 'dictionary:remove_dictionary' %}" method="post">
                 {{ dictionary_form }}
                 {% csrf_token %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Убрать из моих словарей</button>
+                <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">
+                    Убрать из моих словарей
+                </button>
             </form>
             {% else %}
-            <form action="{% url 'dictionary:add_dictionary'%}" method="post">
+                <form action="{% url 'dictionary:add_dictionary'%}" method="post">
                 {{ dictionary_form }}
                 {% csrf_token %}
-            <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">Добавить в мои словари</button>
+                <button class="py-1 my-1 btn btn-outline-dark rounded-0 text-muted w-100" type="submit">
+                    Добавить в мои словари
+                </button>
             </form>
             {% endif %}
         </div>
+        <!--end forms to  add/remove from my dictionaries -->
         {% else %}
+        <!--form to change status of dictionary -->
         <div>
             <form id="change_status" action="{% url 'dictionary:change_status' %}" method="post">
                 {{ dictionary_form }}
@@ -50,7 +57,9 @@
                 </button>
             </form>
         </div>
+        <!--end form to change status of dictionary -->
 
+        <!--form to delete dictionary -->
         <div>
             <form action="{% url 'dictionary:delete_dictionary' %}" method="post">
                 {{ dictionary_form }}
@@ -60,10 +69,12 @@
                 </button>
             </form>
         </div>
+        <!-- end form to delete dictionary -->
         {% endif %}
     </div>
 </div>
 
+<!--form to change required numbers of answers -->
 <div class="d-flex mb-2">
     <div class="">
         <p class="mb-2">Необходимое количество верных ответов:</p>
@@ -75,26 +86,34 @@
         </form>
     </div>
 </div>
+<!-- end form to change required numbers of answers -->
+
+<!--first card of lesson retrieve from instance by model method get_active_cards -->
 <div class="my-2">
-    <!--first card of lesson  retrive from instance by class property  get_random -->
-    {% with card=lesson.get_random %}
-    {% if card %}
+    {% if lesson.get_active_cards %}
     <div class="d-flex">
         <div>
-            <button type="button" class="btn btn-outline-dark me-2 rounded-0"><a
-            href="{% url 'lesson:learn' card_pk=card.pk user_pk=user.pk dictionary_pk=dictionary.pk translation_reverse=0%}" class="text-decoration-none text-muted">Начать урок: прямой перевод</a></button>
+            <button type="button" class="btn btn-outline-dark me-2 rounded-0">
+                <a href="{% url 'lesson:learn' reverse=0 lesson_pk=lesson.pk %}"
+                   class="text-decoration-none text-muted">
+                    Начать урок: прямой перевод
+                </a>
+            </button>
         </div>
         <div>
-            <button type="button" class="btn btn-outline-dark ms-2 rounded-0"><a
-            href="{% url 'lesson:learn' card_pk=card.pk user_pk=user.pk dictionary_pk=dictionary.pk translation_reverse=1 %}" class="text-decoration-none text-muted">Начать урок: обратный перевод</a></button>
+            <button type="button" class="btn btn-outline-dark ms-2 rounded-0">
+                <a href="{% url 'lesson:learn' reverse='reverse' lesson_pk=lesson.pk %}"
+                   class="text-decoration-none text-muted">
+                    Начать урок: обратный перевод
+                </a>
+            </button>
         </div>
     </div>
     {% else %}
-    <h6>Все карточки выучены, измените статус карточек чтобы изучать повторно</h6>
+    <h6>Все карточки выучены, измените статус карточек для начала урока</h6>
     {% endif %}
-    {% endwith %}
-    <!--end first card of lesson  retrive from instance by class property  get_random_first -->
 </div>
+<!--end first card of lesson  retrieve from instance by class property  get_random_first -->
 
 
 <div class="mt-3 mb-2 table-responsive">
@@ -132,13 +151,17 @@
 </div>
 
 <div>
-    {% if dictionary.file %}
-    <button class="py-1 mt-1 mb-2 btn btn-outline-dark rounded-0" type="submit"><a href="{{ dictionary.file.url }}" class="text-decoration-none text-muted" download>Скачать фаил</a></button>
-    {% endif %}
+{% if dictionary.file %}
+    <button class="py-1 mt-1 mb-2 btn btn-outline-dark rounded-0" type="submit">
+    <a href="{{ dictionary.file.url }}" class="text-decoration-none text-muted" download>
+        Скачать файл
+    </a>
+</button>
+{% endif %}
 </div>
 {% endblock %}
 
 
 {% block script %}
-    <script src='{% static "lesson/js/lesson.js" %}'></script>
+<script src='{% static "lesson/js/lesson.js" %}'></script>
 {% endblock %}
