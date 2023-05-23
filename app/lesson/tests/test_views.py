@@ -82,7 +82,7 @@ class TestChangeNumberAnswers(BaseTestSettings):
 
         # check if there is one lesson and number answers is 5
         tested_lesson = Lesson.objects.latest('created')
-        self.assertEqual(2, len(Lesson.objects.all()))
+        self.assertEqual(1, len(Lesson.objects.all()))
         self.assertEqual(5, tested_lesson.required_answers)
 
         res = self.client_auth.post(
